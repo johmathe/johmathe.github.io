@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom"><title>Johan Mathe</title><link href="http://johmathe.github.io/" rel="alternate"></link><link href="http://johmathe.github.io/feeds/python.atom.xml" rel="self"></link><id>http://johmathe.github.io/</id><updated>2010-12-05T19:30:00-08:00</updated><entry><title>My super title</title><link href="http://johmathe.github.io/aviation.html" rel="alternate"></link><updated>2010-12-05T19:30:00-08:00</updated><author><name>Alexis Metaireau</name></author><id>tag:johmathe.github.io,2010-12-03:aviation.html</id><summary type="html">&lt;h1&gt;Some aviation links&lt;/h1&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href="/bay_tour_flight/"&gt;Notes about the bay tour flight&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href="http://www.duats.com/"&gt;Weather&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href="http://www.airnav.com/"&gt;Airnav, US Airports database&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href="http://skyvector.com/"&gt;Route Creator/Airport Information&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;</summary><category term="pelican"></category><category term="publishing"></category></entry><entry><title>My super title</title><link href="http://johmathe.github.io/cnn-mobile-app-tutorial.html" rel="alternate"></link><updated>2010-12-05T19:30:00-08:00</updated><author><name>Alexis Metaireau</name></author><id>tag:johmathe.github.io,2010-12-03:cnn-mobile-app-tutorial.html</id><summary type="html">&lt;h1&gt;Stareface tutorial&lt;/h1&gt;
+&lt;h2&gt;Overview&lt;/h2&gt;
+&lt;p&gt;The following tutorial is split in three main parts. The first part explains hot to build the dataset, the second explains how to train the model and the last chapter explains how to build the mobile app per se.&lt;/p&gt;
+&lt;p&gt;TODO(johmathe): image of blocks showing how the recognition works&lt;/p&gt;
+&lt;h2&gt;Building the dataset&lt;/h2&gt;
+&lt;p&gt;The stareface app recognises movie stars. &lt;/p&gt;
+&lt;h2&gt;Training the model&lt;/h2&gt;
+&lt;h2&gt;Building the mobile app&lt;/h2&gt;
+&lt;h2&gt;Room for improvement&lt;/h2&gt;
+&lt;h2&gt;- Make the layers smaller&lt;/h2&gt;</summary><category term="pelican"></category><category term="publishing"></category></entry><entry><title>My super title</title><link href="http://johmathe.github.io/flying-fighter-jets.html" rel="alternate"></link><updated>2010-12-05T19:30:00-08:00</updated><author><name>Alexis Metaireau</name></author><id>tag:johmathe.github.io,2010-12-03:flying-fighter-jets.html</id><summary type="html">&lt;h1&gt;Flying stuff&lt;/h1&gt;
+&lt;h2&gt;Flying the Albastros L-39&lt;/h2&gt;
+&lt;h2&gt;Flying the Mig-29&lt;/h2&gt;</summary><category term="pelican"></category><category term="publishing"></category></entry><entry><title>My super title</title><link href="http://johmathe.github.io/flying-l-39.html" rel="alternate"></link><updated>2010-12-05T19:30:00-08:00</updated><author><name>Alexis Metaireau</name></author><id>tag:johmathe.github.io,2010-12-03:flying-l-39.html</id><summary type="html">&lt;h1&gt;Flying the albastros L-39&lt;/h1&gt;
+&lt;p&gt;jetwardbirds&lt;/p&gt;</summary><category term="pelican"></category><category term="publishing"></category></entry><entry><title>My super title</title><link href="http://johmathe.github.io/my-super-post.html" rel="alternate"></link><updated>2010-12-05T19:30:00-08:00</updated><author><name>Alexis Metaireau</name></author><id>tag:johmathe.github.io,2010-12-03:my-super-post.html</id><summary type="html">&lt;h1&gt;Research projects&lt;/h1&gt;
+&lt;h2&gt;Performance Estimation of ADMM in a Distributed Environment&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href="http://johmathe.nonutc.fr/ressources/final_report_admm_johmathe.pdf"&gt;report&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href="http://johmathe.nonutc.fr/ressources/poster_admm.pdf"&gt;poster&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;</summary><category term="pelican"></category><category term="publishing"></category></entry><entry><title>My super title</title><link href="http://johmathe.github.io/online-footprint.html" rel="alternate"></link><updated>2010-12-05T19:30:00-08:00</updated><author><name>Alexis Metaireau</name></author><id>tag:johmathe.github.io,2010-12-03:online-footprint.html</id><summary type="html">&lt;h1&gt;Online footprint&lt;/h1&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href="http://github.com/johmathe GitHub"&gt;Github&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href="http://picasaweb.google.com/114327008715195908815 Picasa"&gt;Google Photos&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href="http://twitter.com/johmathe Twitter"&gt;Twitter&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href="http://vimeo.com/johmathe Vimeo"&gt;Vimeo&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href="http://www.linkedin.com/in/johmathe Linkedin"&gt;Linkedin&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;</summary><category term="pelican"></category><category term="publishing"></category></entry><entry><title>My super title</title><link href="http://johmathe.github.io/shotdetect.html" rel="alternate"></link><updated>2010-12-05T19:30:00-08:00</updated><author><name>Alexis Metaireau</name></author><id>tag:johmathe.github.io,2010-12-03:shotdetect.html</id><summary type="html">&lt;h1&gt;Shotdetect&lt;/h1&gt;
+&lt;h2&gt;Shotdetect is a free software (LGPL) which detects shots and scenes from a video.&lt;/h2&gt;
+&lt;p&gt;The result produced is a simple XML file containing all the informations about the movie generated.&lt;/p&gt;
+&lt;h2&gt;Example&lt;/h2&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;shotdetect -i myvideo.avi -o output_dir -s 60 -w -v -f -l -m -r
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;h2&gt;Options details&lt;/h2&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;-s : set threshold
+The threshold is the level for shot detection. High will not detect a lot, low will detect a lot of false shots. A good choice is about 60.
+
+-w : generates audio xml information
+See the generated file for more details
+
+-v : generates video xml informations
+See the generated file for more details
+
+-f : generates the first image of shots
+-l : generates the last image of shots
+-m : generates the thumbnails images
+-r : generates the real size images
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;h2&gt;Source code&lt;/h2&gt;
+&lt;p&gt;Available on &lt;a href="https://github.com/johmathe/Shotdetect"&gt;GitHub&lt;/a&gt;&lt;/p&gt;</summary><category term="pelican"></category><category term="publishing"></category></entry><entry><title>My super title</title><link href="http://johmathe.github.io/technical.html" rel="alternate"></link><updated>2010-12-05T19:30:00-08:00</updated><author><name>Alexis Metaireau</name></author><id>tag:johmathe.github.io,2010-12-03:technical.html</id><summary type="html">&lt;h1&gt;Great papers&lt;/h1&gt;
+&lt;ul&gt;
+&lt;li&gt;A Mathematical Theory of Communication, &lt;em&gt;Claude Shannon&lt;/em&gt;, 1948 [http://johmathe.nonutc.fr/ressources/shannon1948.pdf PDF]&lt;/li&gt;
+&lt;/ul&gt;</summary><category term="pelican"></category><category term="publishing"></category></entry></feed>
