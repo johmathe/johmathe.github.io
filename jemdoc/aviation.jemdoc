@@ -1,0 +1,17 @@
+# jemdoc: menu{MENU}{aviation.html}
+= Aviation
+
+I like flying objects. I make machines fly objects as my day job [http://www.google.com/loon/ Job] but also sometimes as a personal past time. Here are some writeups of flight experiences:
+
+- [flying_bay_tour.html Flying the Bay tour Flight]
+- [flying_l39.html Flying the Albatros L-39]
+- [flying_mig29.html Flying the Mig-29]
+
+== Misc
+
+Some useful aviation resources:
+
+- [http://www.flyincalifornia.com/ Fly In California]
+- [http://www.nrlmry.navy.mil/sat_products.html Satellite Meteorology in The US]. Very convenient for flight preparation. Esp. the [http://www.nrlmry.navy.mil/sat-bin/display10.cgi?SIZE=thumb&PHOT=yes&AREA=pacific/eastern/monterey_bay&PROD=vis&TYPE=&NAV=epac_westcoast&DISPLAY=Latest&CGI=epac_westcoast.cgi&CURRENT=LATEST.jpg&MOSAIC_SCALE= Monterrey Bay View] if you fly in the San Francisco Bay Area.
+- [http://www.airnav.com Airnav, US Airports database]
+- [http://skyvector.com/ Route creator/Airport information]

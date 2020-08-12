@@ -1,0 +1,25 @@
+# jemdoc: menu{MENU}{index.html}
+= Johan Mathe
+
+
+~~~
+{}{img_left}{imgs/johan.jpg}{alt text}{150px}{}
+My main current occupation is half way between renaissance engineering and mad scientist at [http://baylabs.io Bay Labs, Inc]. I focus on using applied mathematics and deep learning to build better products for diagnostics of heart conditions.
+
+~~~
+
+== Interest and research
+- Convex and Distributed Optimization
+- Deep Learning
+- Signal Processing
+- Information theory
+- Optimal control
+- Planet scale monitoring
+- [aviation.html Aviation]
+
+== Contact
+490 Post Street\n
+Suite 824\n
+San Francisco, CA94102\n
+[http://johmathe.name]\n
+[johan.mathe@gmail.com]\n
