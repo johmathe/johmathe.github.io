@@ -1,44 +1,84 @@
 <!DOCTYPE html>
-<html>
-<style>
-  * {
-    box-sizing: border-box;
-  }
+<html><head>
+  <link href="https://fonts.googleapis.com/css2?family=Readex+Pro:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+    }
 
-  body {
-    margin: 0;
-    font-family: Arial;
-  }
+    body {
+      margin: 0;
+      font-family: 'Readex Pro', sans-serif; /* Updated to Readex Pro */
+      background-color: #1d1d1d; /* Dark grey background */
+      color: rgb(237, 75, 75); /* Light text for contrast */
+    }
 
-  .header {
-    text-align: center;
-    padding: 32px;
-  }
+    .header {
+      text-align: center;
+      padding: 32px;
+    }
 
-  /* Create two equal columns that floats next to each other */
-  .column {
-    float: left;
-    width: 50%;
-    padding: 10px;
-  }
+    h1 {
+      text-align: center; /* Centering header */
+      font-size: 48px; /* Increased font size for the title */
+      margin-bottom: 0; /* Adjust as needed */
+    }
 
-  .column img {
-    margin-top: 12px;
-  }
+    h2 {
+      text-align: center; /* Centering year headers */
+      font-size: 36px; /* Increased font size for the years */
+      margin-top: 20px; /* Space above the year headings */
+    }
 
-  /* Clear floats after the columns */
-  .row:after {
-    content: "";
-    display: table;
-    clear: both;
-  }
-</style>
+    /* Create two equal columns that float next to each other */
+    .column {
+      float: left;
+      width: 50%;
+      padding: 10px;
+    }
 
+    .column img {
+      margin-top: 12px;
+      border-radius: 15px; /* Rounded corners for images */
+      width: 100%; /* Ensure images are responsive */
+    }
+
+    /* Clear floats after the columns */
+    .row:after {
+      content: "";
+      display: table;
+      clear: both;
+    }
+  </style>
+</head>
 <body>
 
   <!-- Header -->
   <div class="header">
-    <h1>Treble Makers</h1>
+    <h1>TREBLE<br>MAKERS</h1>
+  </div>
+
+  <!-- 2023 Photo Grid -->
+  <h2>2023</h2>
+  <div class="row">
+    <div class="column">
+      <img src="camp_images/applause_interactivity.jpg">
+      <img src="camp_images/creme_brulee.jpg">
+      
+    </div>
+    <div class="column">
+      <img src="camp_images/camp_sign_frontage.png">
+      <img src="camp_images/elias_naked_painting.jpg">
+      
+    </div>
+    <div class="column">
+      <img src="camp_images/night.jpg">
+      <img src="camp_images/shade_day.jpg">
+    </div>
+    <div class="column">
+      <img src="camp_images/piano_emiran.jpg">
+      <img src="camp_images/rain_sunset.png">
+    </div>
   </div>
 
   <h2>2022</h2>
@@ -46,7 +86,6 @@
     <div class="column">
       <img src="camp_images/2022_live_concert.jpg" style="width:100%">
       <img src="camp_images/2022_benches.jpg" style="width:100%">
-
       <img src="camp_images/2022_build_top_view.jpg" style="width:100%">
     </div>
     <div class="column">
@@ -74,32 +113,32 @@
   <h2>2021</h2>
   <div class="row">
     <div class="column">
-      <img src="/camp_images/camp_day.jpg" style="width:100%">
-      <img src="/camp_images/camp_red.jpg" style="width:100%">
-      <img src="/camp_images/camp_techno_gecko.jpg" style="width:100%">
-      <img src="/camp_images/pizza_camp.jpg" style="width:100%">
-      <img src="/camp_images/stage_2.jpg" style="width:100%">
+      <img src="camp_images/camp_day.jpg" style="width:100%">
+      <img src="camp_images/camp_red.jpg" style="width:100%">
+      <img src="camp_images/camp_techno_gecko.jpg" style="width:100%">
+      <img src="camp_images/pizza_camp.jpg" style="width:100%">
+      <img src="camp_images/stage_2.jpg" style="width:100%">
     </div>
     <div class="column">
-      <img src="/camp_images/buffer.jpg" style="width:100%">
-      <img src="/camp_images/art_car_night.jpg" style="width:100%">
-      <img src="/camp_images/camp_far_night.jpg" style="width:100%">
-      <img src="/camp_images/art_car1.jpg" style="width:100%">
-      <img src="/camp_images/playa_view.jpg" style="width:100%">
+      <img src="camp_images/buffer.jpg" style="width:100%">
+      <img src="camp_images/art_car_night.jpg" style="width:100%">
+      <img src="camp_images/camp_far_night.jpg" style="width:100%">
+      <img src="camp_images/art_car1.jpg" style="width:100%">
+      <img src="camp_images/playa_view.jpg" style="width:100%">
     </div>
     <div class="column">
-      <img src="/camp_images/top_view_camp.jpg" style="width:100%">
-      <img src="/camp_images/bar.jpeg" style="width:100%">
-      <img src="/camp_images/buffer_sunset.jpeg" style="width:100%">
-      <img src="/camp_images/buffer_night.jpg" style="width:100%">
-      <img src="/camp_images/flame_throwing_night_ladybug.jpg" style="width:100%">
+      <img src="camp_images/top_view_camp.jpg" style="width:100%">
+      <img src="camp_images/bar.jpeg" style="width:100%">
+      <img src="camp_images/buffer_sunset.jpeg" style="width:100%">
+      <img src="camp_images/buffer_night.jpg" style="width:100%">
+      <img src="camp_images/flame_throwing_night_ladybug.jpg" style="width:100%">
     </div>
     <div class="column">
-      <img src="/camp_images/piano.jpg" style="width:100%">
-      <img src="/camp_images/dance.jpg" style="width:100%">
-      <img src="/camp_images/ladybug_alone.jpg" style="width:100%">
-      <img src="/camp_images/stage.jpg" style="width:100%">
-      <img src="/camp_images/ladybug_original.jpg" style="width:100%">
+      <img src="camp_images/piano.jpg" style="width:100%">
+      <img src="camp_images/dance.jpg" style="width:100%">
+      <img src="camp_images/ladybug_alone.jpg" style="width:100%">
+      <img src="camp_images/stage.jpg" style="width:100%">
+      <img src="camp_images/ladybug_original.jpg" style="width:100%">
     </div>
   </div>
 
