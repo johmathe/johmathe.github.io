@@ -4,6 +4,10 @@
 <head>
   <meta name="viewport" content="width=device-width">
   <meta name="generator" content="HTML Tidy for Linux/x86 (vers 11 February 2007), see www.w3.org">
+  <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+  <script id="MathJax-script" async
+          src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
+  </script>
   <style type="text/css">
     /* Color scheme stolen from Sergey Karayev */
 
@@ -130,22 +134,23 @@
             </td>
           </tr>
         </table>
+        
         <table width="100%" align="center" border="0" cellspacing="0" cellpadding="20">
-          <tr onmouseout="pvnet_stop()" onmouseover="pvnet_start()">
+          <tr onmouseout="geometric_stop()" onmouseover="geometric_start()">
             <td width="25%">
               <div class="one">
-                <div class="two" id='pvnet_image'><img src='images/pvnet_after.png' width="170"></div>
-                <img src='images/pvnet_before.png' width="170">
+                <div class="two" id='geometric_image'><img src='images/geometric_structures_after.png' width="170"></div>
+                <img src='images/geometric_structures_before.png' width="170">
               </div>
               <script type="text/javascript">
-                function pvnet_start() {
-                  document.getElementById('pvnet_image').style.opacity = "1";
+                function geometric_start() {
+                  document.getElementById('geometric_image').style.opacity = "1";
                 }
 
-                function pvnet_stop() {
-                  document.getElementById('pvnet_image').style.opacity = "0";
+                function geometric_stop() {
+                  document.getElementById('geometric_image').style.opacity = "0";
                 }
-                pvnet_stop()
+                geometric_stop()
               </script>
             </td>
             <td valign="top" width="75%">
@@ -162,7 +167,8 @@
               <p>
                 The enduring legacy of Euclidean geometry underpins classical machine learning, which, for decades, has been primarily 
                 developed for data lying in Euclidean space. Yet, modern machine learning increasingly encounters richly structured data
-                that is inherently nonEuclidean. This data can exhibit intricate geometric, topological and algebraic structure: from the
+                that is inherently <b>non-Euclidean</b>. This data can exhibit intricate <b>geometric, topological and algebraic</b>
+                structure: from the
                 geometry of the curvature of space-time, to topologically complex interactions between neurons in the brain, to the 
                 algebraic transformations describing symmetries of physical systems. Extracting knowledge from such non-Euclidean 
                 data necessitates a broader mathematical perspective. Echoing the 19th-century revolutions that gave rise to 
@@ -174,6 +180,41 @@
               </p>
             </td>
           </tr>
+
+          <tr onmouseout="bispectrum_stop()" onmouseover="bispectrum_start()">
+            <td width="25%">
+              <div class="one">
+                <div class="two" id='bispectrum_image'><img src='images/bispectrum_after.png' width="170"></div>
+                <img src='images/bispectrum_before.png' width="170">
+              </div>
+              <script type="text/javascript">
+                function bispectrum_start() {
+                  document.getElementById('bispectrum_image').style.opacity = "1";
+                }
+
+                function bispectrum_stop() {
+                  document.getElementById('bispectrum_image').style.opacity = "0";
+                }
+                bispectrum_stop()
+              </script>
+            </td>
+            <td valign="top" width="75%">
+              <a href="https://arxiv.org/abs/2407.07655">
+                <papertitle>The Selective G-Bispectrum and its Inversion: Applications to G-Invariant Networks</papertitle>
+              </a>
+              <br>
+              Simon Mataigne,
+              <strong>Johan Mathe</strong>,
+              Sophia Sanborn, Christopher Hillar, Nina Miolane
+              <br>
+              <em>arXiv Preprint</em>, 2024
+              <br>
+              <p>An important problem in signal processing and deep learning is to achieve <em>invariance</em> 
+                to nuisance factors not relevant for the task. Since many of these factors are describable as the 
+                action of a group \( G \) (e.g., rotations, translations, scalings), we want methods to be \( G \)-invariant. The \( G \)-Bispectrum extracts every characteristic of a given signal up to group action: for example, the shape of an object in an image, but not its orientation. Consequently, the \( G \)-Bispectrum has been incorporated into deep neural network architectures as a computational primitive for \( G \)-invariance&mdash;akin to a pooling mechanism, but with greater selectivity and robustness. However, the computational cost of the \( G \)-Bispectrum \(\mathcal{O}(|G|^2)\), with \( |G| \) the size of the group, has limited its widespread adoption. Here, we show that the \( G \)-Bispectrum computation contains redundancies that can be reduced into a <em>selective G-Bispectrum</em> with \(\mathcal{O}(|G|)\) complexity. We prove desirable mathematical properties of the selective \( G \)-Bispectrum and demonstrate how its integration in neural networks enhances accuracy and robustness compared to traditional approaches, while enjoying considerable speed-ups compared to the full \( G \)-Bispectrum.</p>
+            </td>
+          </tr>
+
           <tr onmouseout="pvnet_stop()" onmouseover="pvnet_start()">
             <td width="25%">
               <div class="one">
@@ -488,8 +529,7 @@
                 where I started working extensively with weather data - especially wind data. I focused on optimal
                 control and path planning. We also worked on explore exploit strategies to allow unprecedented balloon
                 steering performance. You can find more details on <a href="https://www.technologyreview.com/technology/project-loon/">this article</a> from MIT Tech Review.
-                This <a href="https://www.youtube.com/watch?v=HOndhtfIXSY">video</a> is a good starting point if you
-                never heard of project Loon. A <a href="https://www.theverge.com/2015/3/2/8129543/google-x-internet-balloon-project-loon-interview">great article</a> on <a href="https://www.theverge.com/2015/3/2/8129543/google-x-internet-balloon-project-loon-interview">The Verge</a> gives some interesting bits about loon navigation's system.
+               <a href="https://www.theverge.com/2015/3/2/8129543/google-x-internet-balloon-project-loon-interview">great article</a> on <a href="https://www.theverge.com/2015/3/2/8129543/google-x-internet-balloon-project-loon-interview">The Verge</a> gives some interesting bits about loon navigation's system.
               </p>
             </td>
           </tr>
