@@ -104,6 +104,16 @@
       padding-top: 70px;
     }
 
+    .bio-name {
+      display: none;
+      font-size: 32px;
+      font-weight: 700;
+      color: #1a1a1a;
+      text-align: center;
+      margin-bottom: 16px;
+      letter-spacing: -0.3px;
+    }
+
     .bio p {
       margin-bottom: 14px;
       text-align: justify;
@@ -256,14 +266,89 @@
 
     /* Responsive */
     @media (max-width: 700px) {
-      .hero { height: 200px; }
-      .hero-name { font-size: 28px; bottom: 16px; }
-      .profile-wrapper { flex-direction: column; align-items: center; text-align: center; }
-      .profile-photo { width: 140px; height: 140px; }
-      .bio { padding-top: 20px; }
-      .link-bar { justify-content: center; }
-      .container { padding: 0 16px; }
-      .profile-section { padding: 0 16px; }
+      .hero { height: 180px; }
+      .hero-name { display: none; }
+      .bio-name { display: block; }
+
+      .profile-section {
+        margin-top: -40px;
+        padding: 0 20px 30px;
+      }
+
+      .profile-wrapper {
+        flex-direction: column;
+        align-items: center;
+        text-align: left;
+      }
+
+      .profile-photo {
+        width: 120px;
+        height: 120px;
+        margin-bottom: 10px;
+      }
+
+      .bio {
+        padding-top: 10px;
+      }
+
+      .bio p {
+        text-align: left;
+        font-size: 14px;
+      }
+
+      .link-bar {
+        justify-content: center;
+      }
+
+      .container {
+        padding: 0 20px;
+      }
+
+      .section, .section-alt {
+        padding: 30px 0;
+      }
+
+      .section-heading {
+        font-size: 20px;
+      }
+
+      /* Stack project tables vertically on mobile */
+      .project-table,
+      .project-table tbody,
+      .project-table tr,
+      .project-table td {
+        display: block;
+        width: 100% !important;
+      }
+
+      .project-table td {
+        padding: 8px 0;
+      }
+
+      .project-table tr {
+        padding: 20px 0;
+      }
+
+      .project-table td[width="25%"] {
+        display: flex;
+        justify-content: center;
+        padding-bottom: 12px;
+      }
+
+      .one {
+        width: 200px;
+        height: 200px;
+      }
+
+      .one img {
+        width: 200px;
+        height: 200px;
+      }
+
+      .two {
+        width: 200px;
+        height: 200px;
+      }
     }
   </style>
   <link rel="icon" type="image/png" href="images/seal_icon.png">
@@ -285,6 +370,7 @@
     <div class="profile-wrapper">
       <img class="profile-photo" src="images/johan_small.jpg" alt="Johan Mathe">
       <div class="bio">
+        <div class="bio-name">Johan Mathe</div>
         <p>
           Johan Mathé has spent the past 15 years applying AI to the hardest problems in physics: systems dominated by <b>uncertainty</b>, <b>nonlinearity</b>, and <b>chaos</b>.
         </p>
