@@ -402,6 +402,53 @@
       <p class="section-subtitle">Signal processing, optimization, statistics/machine learning, image processing and control theory.</p>
 
       <table class="project-table" width="100%" align="center" border="0" cellspacing="0" cellpadding="20">
+        <tr onmouseout="bispectrum_lib_stop()" onmouseover="bispectrum_lib_start()">
+          <td width="25%">
+            <div class="one">
+              <div class="two" id='bispectrum_lib_image'><img src='images/bispectrum_lib_after.png'></div>
+              <img src='images/bispectrum_lib_before.png'>
+            </div>
+            <script type="text/javascript">
+              function bispectrum_lib_start() {
+                document.getElementById('bispectrum_lib_image').style.opacity = "1";
+              }
+              function bispectrum_lib_stop() {
+                document.getElementById('bispectrum_lib_image').style.opacity = "0";
+              }
+              bispectrum_lib_stop()
+            </script>
+          </td>
+          <td valign="top" width="75%">
+            <a href="https://arxiv.org/abs/2605.07270">
+              <papertitle>bispectrum: Selective G-Bispectra Made Practical</papertitle>
+            </a>
+            <br>
+            <strong>Johan Mathe</strong>,
+            Adele Myers, Simon Mataigne, Nina Miolane
+            <br>
+            <em>NeurIPS</em>, 2026
+            <br>
+            <a href="https://github.com/geometric-intelligence/bispectrum">code</a>
+            <p>
+              Many machine learning tasks are invariant under the action of a group \( G \) of transformations: signal
+              classification under translations, image classification under 2D rotations, spherical-image classification
+              under 3D rotations. The \( G \)-bispectrum is a principled <em>complete</em> invariant of a signal (retaining
+              all of the signal's information up to the group action) with proven benefits in machine learning and as a
+              pooling layer in deep networks. However, its deployment has been hampered by high computational cost and a
+              patchwork of group-specific implementations. We present <b>bispectrum</b>, an open-source, fully unit-tested
+              PyTorch library that implements <em>selective</em> \( G \)-bispectra for seven different group actions, as
+              differentiable modules that drop directly into deep learning architectures. For finite groups, selectivity
+              reduces the cost from \(\mathcal{O}(|G|^2)\) to \(\mathcal{O}(|G|)\). For planar rotations, we leverage the
+              disk bispectrum. For spherical 3D rotations, we introduce an augmented selective bispectrum at band-limit
+              \( L \) that reduces the cost from \(\mathcal{O}(L^3)\) to \(\Theta(L^2)\) coefficients. The library delivers
+              near-exact \( G \)-invariance with selective bispectra computed in sub-millisecond time on GPU. Evaluated as
+              pooling layers on three classical benchmarks against norm, gated, Fourier-ELU and max pooling and
+              data-augmented convolutional baselines, \( G \)-bispectra consistently outperform alternatives in the
+              low-data, moderate-capacity regime.
+            </p>
+          </td>
+        </tr>
+
         <tr onmouseout="geometric_stop()" onmouseover="geometric_start()">
           <td width="25%">
             <div class="one">
