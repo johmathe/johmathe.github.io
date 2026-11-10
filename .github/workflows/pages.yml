@@ -1,0 +1,55 @@
+name: Pages
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: _src/bispectrum/.nvmrc
+          cache: npm
+          cache-dependency-path: _src/bispectrum/package-lock.json
+
+      - name: Build the bispectrum post
+        working-directory: _src/bispectrum
+        env:
+          SITE_URL: https://johmathe.github.io/bispectrum/
+        run: |
+          npm ci
+          npx vitest run --exclude '**/*.bench.test.ts'
+          npm run build
+
+      - name: Assemble the site
+        run: |
+          rsync -a --exclude _src --exclude .github --exclude .git --exclude _site ./ _site/
+          cp -r _src/bispectrum/dist _site/bispectrum
+
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v5

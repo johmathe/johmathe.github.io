@@ -1,0 +1,32 @@
+{
+  "name": "bispectrum-blog",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "engines": {
+    "node": ">=22.12"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "export": "cd .. && uv run python blog/scripts/export_tables.py",
+    "train": "cd .. && uv run python blog/scripts/train_classifiers.py"
+  },
+  "dependencies": {
+    "katex": "^0.16.47",
+    "three": "^0.187.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "@types/three": "^0.187.0",
+    "prettier": "^3.9.10",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.7",
+    "vitest": "^5.1.0"
+  }
+}

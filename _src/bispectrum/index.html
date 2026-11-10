@@ -1,0 +1,1273 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>bispectrum: Selective G-Bispectra Made Practical</title>
+    <meta
+      name="description"
+      content="The bispectrum is a rotation-invariant feature that, unlike the power spectrum, keeps the relative phases of a signal's Fourier coefficients. On a finite group its size is quadratic in the signal. These are notes on selective bispectra, which keep a linear number of its entries, and on bispectrum, our PyTorch library for them."
+    />
+    <!-- Link previews need absolute URLs: build with SITE_URL set (see vite.config.ts). -->
+    <meta property="og:type" content="article" />
+    <meta property="og:title" content="bispectrum: Selective G-Bispectra Made Practical" />
+    <meta
+      property="og:description"
+      content="The bispectrum is a rotation-invariant feature that, unlike the power spectrum, keeps the relative phases of a signal's Fourier coefficients. On a finite group its size is quadratic in the signal. These are notes on selective bispectra, which keep a linear number of its entries, and on bispectrum, our PyTorch library for them."
+    />
+    <meta property="og:image" content="__SITE_URL__card.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta
+      property="og:image:alt"
+      content="The Earth drawn from 441 numbers, beside the 638 numbers of its bispectrum."
+    />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="stylesheet" href="./src/style.css" />
+  </head>
+  <body>
+    <header class="masthead">
+      <div class="l-body">
+        <h1>
+          <img
+            class="wordmark-title"
+            data-brand="wordmark"
+            alt="bispectrum"
+            width="197"
+            height="32"
+          />: Selective \(G\)-Bispectra Made Practical
+        </h1>
+        <p class="byline">
+          Johan Mathe, Adele Myers Lantow, Simon Mataigne and Nina Miolane ·
+          <a href="https://arxiv.org/abs/2605.07270">Paper</a> ·
+          <a href="https://github.com/geometric-intelligence/bispectrum">Code</a>
+        </p>
+      </div>
+    </header>
+
+    <main>
+      <!-- 1. Hook -->
+      <section class="l-body" id="hook">
+        <p>
+          The usual way to make a network rotation-invariant is to pool. Each filter is applied in
+          every orientation, and only the largest response is kept. This isn't wrong, but it throws
+          away much more than the orientation. The power spectrum, the textbook invariant, is no
+          better, since it keeps the magnitudes of the Fourier coefficients and drops their
+          relative phases.
+        </p>
+        <p>
+          The problem extends beyond rotations. For translations, reflections, or more general
+          symmetry groups, we'd like a representation that preserves as much information as
+          possible while ignoring the group action.
+        </p>
+        <p>
+          The \(G\)-bispectrum keeps what the power spectrum loses: relationships between Fourier
+          coefficients that the group action preserves. The construction works across different
+          groups, although computing the full bispectrum is often prohibitively expensive for
+          neural networks. We show how to retain just a small, carefully chosen subset of its
+          coefficients, with completeness guarantees for several symmetry groups.
+        </p>
+        <p>
+          Consider the Earth's land mask, represented using spherical harmonics up to degree
+          <span data-check="hero.L">20</span>, with
+          <span data-check="hero.coeffs">441</span> coefficients. Rotate the globe and the
+          coefficients generally change, but its power spectrum, just
+          <span data-check="hero.power">21</span> numbers, remains the same. Unfortunately, plenty
+          of other signals have exactly the same power spectrum. The globe at the top right is one
+          of them.
+        </p>
+        <p>
+          Now consider the <span data-check="hero.fp">638</span> features in the lower panel, sums
+          of products of three or four coefficients, chosen so that a rotation leaves every one
+          unchanged. Unlike the power spectrum, they contain enough information for a numerical
+          optimizer to reconstruct the original land mask, up to an arbitrary rotation.
+        </p>
+      </section>
+      <figure class="l-body widget-figure">
+        <div data-figure="hero" data-loading="Loading the Earth…"></div>
+        <figcaption>
+          Left: the land mask (orange is land) and its
+          <span data-check="hero.coeffs">441</span> coefficients. Top right: the power spectrum,
+          one energy per degree, and a globe with the same
+          <span data-check="hero.power">21</span> numbers; “another” draws a new one. Bottom right:
+          the <span data-check="hero.fp">638</span> features,
+          <span data-check="hero.triples">532</span> triple products and
+          <span data-check="hero.energies">106</span> product energies, and the globe the optimizer
+          rebuilt from them alone. “Line it up” rotates it onto the Earth, and “again” reruns the
+          optimizer from new random starts.
+        </figcaption>
+      </figure>
+      <section class="l-body">
+        <p>
+          That's the idea behind the selective \(G\)-bispectrum: retain a small subset of
+          higher-order invariants rather than computing all of them. We establish completeness
+          results for several groups, provide strong numerical evidence on the sphere, and
+          introduce a PyTorch library that makes these representations practical to use in neural
+          networks.
+        </p>
+      </section>
+
+      <nav class="l-body toc" aria-label="Contents">
+        <span class="toc-kicker">Contents</span>
+        <ol>
+          <li>
+            <a href="#invariance">Bispectrum and invariance</a>
+            <ol>
+              <li><a href="#orbits">Orbits and completeness</a></li>
+              <li><a href="#ring">Fourier coefficients on the ring</a></li>
+              <li><a href="#triple-products">Triple products</a></li>
+            </ol>
+          </li>
+          <li>
+            <a href="#g-bispectrum">The \(G\)-bispectrum</a>
+            <ol>
+              <li><a href="#group-fourier">Fourier transforms on groups</a></li>
+              <li><a href="#noncommutative">Non-commutative groups</a></li>
+              <li><a href="#sphere">Sphere</a></li>
+            </ol>
+          </li>
+          <li>
+            <a href="#selective">Selective bispectra</a>
+            <ol>
+              <li><a href="#cost">Cost</a></li>
+              <li><a href="#ring-finite">Ring and finite groups</a></li>
+              <li><a href="#sphere-selective">Sphere, degree by degree</a></li>
+              <li><a href="#completeness">Testing completeness</a></li>
+            </ol>
+          </li>
+          <li>
+            <a href="#library">Python library (PyTorch)</a>
+            <ol>
+              <li><a href="#modules">Modules</a></li>
+              <li><a href="#usage">Example usage</a></li>
+              <li><a href="#speed">Speed</a></li>
+            </ol>
+          </li>
+          <li>
+            <a href="#experiments">Experiments</a>
+            <ol>
+              <li><a href="#spherical-mnist">Spherical MNIST</a></li>
+              <li><a href="#pooling-results">As a pooling layer</a></li>
+            </ol>
+          </li>
+          <li><a href="#playground">Try it</a></li>
+          <li><a href="#references">References</a></li>
+        </ol>
+      </nav>
+
+      <!-- 2. Bispectrum and invariance -->
+      <section class="l-body chapter-head" id="invariance">
+        <h2>Bispectrum and invariance</h2>
+      </section>
+      <section class="l-body" id="orbits">
+        <h3>Orbits and completeness</h3>
+        <p>
+          To say what an invariant should forget, let's write \(R \cdot f\) for the signal \(f\)
+          rotated by \(R\). We call the rotation the signal's <dfn>pose</dfn> and the set \(\{R
+          \cdot f\}\) of all its rotated copies its <dfn>orbit</dfn>; an invariant should forget
+          the pose and nothing else. Formally, an invariant \(\Phi\) is constant on orbits; it is
+          <dfn>complete</dfn> if it also tells orbits apart, that is if \(\Phi(f) = \Phi(g)\) only
+          when \(g = R \cdot f\) for some \(R\). Following the paper, we call the vector
+          \(\Phi(f)\) the signal's <dfn>invariant descriptor</dfn>. Max pooling over the 8
+          rotations by multiples of 45° is far from complete, since it keeps one response out of 8.
+        </p>
+        <p>
+          Counting dimensions gives a lower bound on the size of a complete invariant that varies
+          smoothly with the signal. A generic signal has no rotational symmetry, so its orbit is
+          three-dimensional, and the orbits of signals with
+          <span data-check="hero.coeffs">441</span> coefficients form a space of dimension
+          <span data-check="hero.coeffs">441</span> − 3 = <span data-check="hero.lower">438</span>.
+          The power spectrum, with <span data-check="hero.power">21</span> numbers, cannot be
+          complete. The <span data-check="hero.fp">638</span> features meet the bound, which is
+          necessary for completeness but doesn't prove it.
+        </p>
+        <p>
+          The construction is easiest to follow on the ring first, where a rotation multiplies each
+          Fourier coefficient by a phase.
+        </p>
+      </section>
+
+      <section class="l-body" id="ring">
+        <h3>Fourier coefficients on the ring</h3>
+        <p>
+          Let's take a periodic function \(r(\theta)\), drawn as a closed curve with radius
+          \(r(\theta)\) at angle \(\theta\), with Fourier coefficients \(c_k = |c_k|\,
+          e^{i\varphi_k}\) for \(k = 0, \dots, 8\); \(c_0\) is the mean radius. Rotating the curve
+          by \(\alpha\) multiplies each coefficient by a phase,
+        </p>
+        <p>\[ c_k \mapsto e^{ik\alpha}\, c_k, \]</p>
+        <p>
+          so the phases advance at different rates, \(\varphi_k\) by \(k\alpha\), and the
+          magnitudes don't change. The group acts diagonally on the coefficients, and the pose is a
+          single phase shared by all of them in the ratio 1 : 2 : 3 : …
+        </p>
+        <p>
+          The <dfn>power spectrum</dfn> \(|c_k|^2\) drops the phases, so it is invariant, and it is
+          also very far from complete. Step 2 of the figure below shows why: a scramble, which
+          keeps every \(|c_k|\) and draws new phases at random, gives a different curve with the
+          same power spectrum. A rotation moves the phases \(\varphi_1, \dots, \varphi_8\) along a
+          line, \(\varphi_k \mapsto \varphi_k + k\alpha\); the scramble moves them anywhere. What
+          we want are functions of the phases that are constant along such lines and tell different
+          lines apart.
+        </p>
+      </section>
+
+      <section class="l-body" id="triple-products">
+        <h3>Triple products</h3>
+        <p>
+          Phases add under multiplication, so a product of coefficients whose frequencies sum to
+          zero is invariant. The smallest interesting ones are cubic:
+        </p>
+        <p>
+          \[ \beta_{k_1, k_2} = c_{k_1}\, c_{k_2}\, \overline{c_{k_1 + k_2}} \;\mapsto\; e^{i(k_1 +
+          k_2 - (k_1 + k_2))\alpha}\, \beta_{k_1, k_2} = \beta_{k_1, k_2}. \]
+        </p>
+        <p>
+          The phase of \(\beta_{k_1, k_2}\) is \(\varphi_{k_1} + \varphi_{k_2} - \varphi_{k_1 +
+          k_2}\), a relation between three phases, which a rotation preserves and the scramble
+          doesn't. Three is the lowest order at which this happens: a single coefficient is
+          invariant only for \(k = 0\), and the only invariant products of two are \(c_k
+          \overline{c_k} = |c_k|^2\). The table of all \(\beta_{k_1, k_2}\) is the
+          <dfn>bispectrum</dfn>, so called because it has two frequency indices where the power
+          spectrum has one; its row \(k_1 = 0\) is \(c_0 |c_k|^2\), the power spectrum again.
+        </p>
+        <p>
+          The figure below draws the entries with \(k_1 \le k_2\) and \(k_1 + k_2 \le 8\) by their
+          phases, each under the column of \(k_2\). Its second panel is the plane of \((\varphi_1,
+          \varphi_2)\): a rotation moves this point along a line of slope 2, a level set of \(\arg
+          \beta_{1,1} = 2\varphi_1 - \varphi_2\).
+        </p>
+      </section>
+      <figure class="l-body widget-figure" id="ring-figure">
+        <div data-figure="ring" data-loading="Loading the ring…"></div>
+        <figcaption>
+          <ol class="steps">
+            <li>
+              <button type="button" class="step" data-step="turn">Turn it.</button> One full turn
+              of the curve. Each \(\varphi_k\) goes round \(k\) times; the power spectrum (bars)
+              and every \(\beta_{k_1, k_2}\) stay fixed, and the point \((\varphi_1, \varphi_2)\)
+              runs along its line.
+            </li>
+            <li>
+              <button type="button" class="step" data-step="scramble">Scramble the phases.</button>
+              New random \(\varphi_k\), the same \(|c_k|\): a different curve (dashed, the one
+              before), a point on another line, and different \(\beta\).
+            </li>
+            <li>
+              <button type="button" class="step" data-step="pick">Pick an entry.</button>
+              \(\beta_{2,3} = c_2 c_3 \overline{c_5}\), with its three coefficients marked. As the
+              curve turns they advance by \(2\alpha\), \(3\alpha\) and \(5\alpha\), and the entry's
+              phase \(\varphi_2 + \varphi_3 - \varphi_5\) stays put. Click any other cell.
+            </li>
+            <li>
+              <button type="button" class="step" data-step="rebuild">Invert the chain.</button>
+              The 9 outlined entries, one per step: \(\beta_{0,0}\) gives \(c_0\), \(\beta_{0,1}\)
+              gives \(|c_1|\), and each \(\beta_{1,k}\) gives \(c_{k+1}\). The recovered phases are
+              the orange marks on the \(\varphi_k\) row, and the curve they give is drawn in
+              orange. The chain is explained <a href="#ring-finite">below</a>.
+            </li>
+            <li>
+              <button type="button" class="step" data-step="free">Move the free phase.</button>
+              No entry fixes \(\varphi_1\). Changing it by \(\delta\) changes each recovered
+              \(\varphi_k\) by \(k\delta\), a rotation: the rebuilt curve turns and its point
+              slides along the same line. The sweep ends on the signal.
+            </li>
+          </ol>
+        </figcaption>
+      </figure>
+      <section class="l-body">
+        <aside class="note">
+          <span class="aside-kicker">Aside · history</span>
+          <p>
+            The bispectrum is older than the FFT: John Tukey introduced it in a 1953 manuscript on
+            the higher moments of time series. Giannakis (1989) showed that a thin slice of it is
+            enough to reconstruct a signal: the chain we come back to
+            <a href="#ring-finite">below</a>.
+          </p>
+        </aside>
+        <aside class="note">
+          <span class="aside-kicker">Aside · telescopes</span>
+          <p>
+            Astronomers use the same cancellation. Among its effects, turbulence shifts a star's
+            image at random between short exposures, which multiplies frequency \(k\) by
+            \(e^{iks}\) for an unknown shift \(s\); the bispectrum averaged over many frames is
+            unaffected, and keeps the phases that the shift scrambles. This is speckle masking
+            (Lohmann, Weigelt and Wirnitzer, 1983). Radio interferometers sum phases around a
+            triangle of three antennas, so that each antenna's phase error enters once with each
+            sign and cancels: the closure phase (Jennison, 1958). Neither is in the paper; see the
+            references.
+          </p>
+        </aside>
+        <p class="mark-line">
+          <img class="mark-inline" data-brand="mark" alt="" width="32" height="32" />
+          <span>
+            The library's logo is this triangle: three coefficients whose phases cancel under
+            rotation, inside the round counter of a <i>b</i>.
+          </span>
+        </p>
+      </section>
+
+      <!-- 3. The G-bispectrum -->
+      <section class="l-body chapter-head" id="g-bispectrum">
+        <h2>The \(G\)-bispectrum</h2>
+      </section>
+      <section class="l-body" id="group-fourier">
+        <h3>Fourier transforms on groups</h3>
+        <p>
+          Nothing above is specific to the ring. What made it work is that the Fourier basis
+          diagonalises the group action: each coefficient transforms on its own, by a phase. For a
+          general compact group the action can't always be diagonalised, but it can be
+          block-diagonalised. The blocks are the
+          <dfn data-term="irreducible representation">irreducible representations</dfn> of \(G\),
+          or irreps: unitary matrix representations of \(G\) that cannot be split into smaller
+          ones. The Fourier transform on \(G\) has one coefficient per irrep, and irreps play the
+          role of frequencies. For a finite group, the coefficient at an irrep \(\rho\) of
+          dimension \(d\) is a \(d \times d\) matrix,
+        </p>
+        <p>\[ \hat f(\rho) = \sum_{g \in G} f(g)\, \rho(g)^\dagger. \]</p>
+        <p>
+          Let's shift the signal by a group element \(h\), \((h \cdot f)(g) = f(h^{-1} g)\). Each
+          coefficient is then multiplied on the right by a unitary matrix,
+        </p>
+        <p>\[ \hat f(\rho) \mapsto \hat f(\rho)\, \rho(h)^\dagger, \]</p>
+        <p>
+          and the power spectrum becomes the matrix \(\hat f(\rho)\, \hat f(\rho)^\dagger\),
+          invariant because \(\rho(h)^\dagger \rho(h) = I\). For SO(2) the irreps are the \(1
+          \times 1\) matrices \(e^{ik\alpha}\), the transform is the usual one, and a rotation by
+          \(\alpha\) multiplies \(\hat f(\rho_k)\) by \(e^{-ik\alpha}\). The ring's \(c_k\), which
+          turn by \(e^{ik\alpha}\), are their complex conjugates. Conjugating every formula changes
+          nothing else, and from here on we keep the paper's conventions.
+        </p>
+        <p>
+          Counting shows that the transform loses nothing. The irreps of a finite group satisfy
+          \(\sum_\rho d_\rho^2 = |G|\), so the coefficients of the transform hold as many numbers
+          as the signal has values, and the transform is a change of basis. Here it is for a few
+          groups, finite and not:
+        </p>
+        <figure class="table-figure">
+          <div class="dictionary-scroll">
+            <table class="dictionary">
+              <thead>
+                <tr>
+                  <th>Group</th>
+                  <th>Irreps</th>
+                  <th>A coefficient</th>
+                  <th>Total size</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <th>\(\mathbb{R}\), shifts of a line</th>
+                  <td>\(e^{i\omega x}\) for \(\omega \in \mathbb{R}\), all \(1 \times 1\)</td>
+                  <td>a complex number</td>
+                  <td>a continuum</td>
+                </tr>
+                <tr>
+                  <th>\(C_n\), turns of a ring of \(n\) points</th>
+                  <td>\(n\), all \(1 \times 1\), one per frequency</td>
+                  <td>a complex number</td>
+                  <td>\(n\)</td>
+                </tr>
+                <tr>
+                  <th>SO(2), up to frequency \(K\)</th>
+                  <td>\(e^{ik\alpha}\) for \(|k| \le K\), all \(1 \times 1\)</td>
+                  <td>a complex number</td>
+                  <td>\(2K + 1\)</td>
+                </tr>
+                <tr>
+                  <th>\(D_n\), turns and flips of an \(n\)-gon</th>
+                  <td>two \(1 \times 1\) (four for even \(n\)), the rest \(2 \times 2\)</td>
+                  <td>a \(1 \times 1\) or \(2 \times 2\) matrix</td>
+                  <td>\(2n\)</td>
+                </tr>
+                <tr>
+                  <th>\(O\), 24 rotations of a cube</th>
+                  <td>of sizes 1, 1, 2, 3, 3, and \(1 + 1 + 4 + 9 + 9 = 24\)</td>
+                  <td>a \(d \times d\) matrix</td>
+                  <td>\(24\)</td>
+                </tr>
+                <tr>
+                  <th>SO(3) on the sphere</th>
+                  <td>one per \(\ell = 0, \dots, L\), of size \(2\ell + 1\)</td>
+                  <td>a vector of length \(2\ell + 1\)</td>
+                  <td>\((L + 1)^2\)</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <figcaption>
+            “Total size” is the number of complex numbers in \(\hat f\), cut off at \(K\) or \(L\)
+            where needed. The first three rows are the Fourier transform, the discrete Fourier
+            transform and Fourier series; on \(\mathbb{R}\) the sum is an integral.
+          </figcaption>
+        </figure>
+        <p>
+          Commutative groups are the rows with only \(1 \times 1\) irreps. The sphere is the odd
+          row: it is a space that SO(3) acts on rather than the group itself, so each irrep
+          contributes a vector of length \(2\ell + 1\) instead of a square matrix, and the count is
+          \(\sum_\ell (2\ell + 1)\) rather than \(\sum_\ell (2\ell + 1)^2\).
+        </p>
+      </section>
+
+      <section class="l-body" id="noncommutative">
+        <h3>Non-commutative groups</h3>
+        <p>
+          On the ring every irrep is \(1 \times 1\), and this is a consequence of commutativity:
+          matrices that commute with each other can be diagonalised together, so a representation
+          of a commutative group splits into lines. A non-commutative group has irreps larger than
+          \(1 \times 1\). The smallest examples are the dihedral groups \(D_n\), the \(n\) turns
+          and \(n\) flips of a regular \(n\)-gon, generated by a turn \(a\) and a flip \(x\) with
+          \(x a x = a^{-1}\): turning and then flipping is not the same as flipping and then
+          turning. Two irreps of \(D_n\) are \(1 \times 1\) (four when \(n\) is even) and send each
+          element to \(\pm 1\); the rest are \(2 \times 2\),
+        </p>
+        <p>
+          \[ \rho_k(a) = \begin{pmatrix} \cos \frac{2\pi k}{n} & -\sin \frac{2\pi k}{n} \\ \sin
+          \frac{2\pi k}{n} & \cos \frac{2\pi k}{n} \end{pmatrix}, \qquad \rho_k(x) =
+          \begin{pmatrix} 1 & 0 \\ 0 & -1 \end{pmatrix}, \qquad 0 &lt; k &lt; n/2. \]
+        </p>
+        <p>
+          The two matrices don't commute, so no change of basis diagonalises both. The coefficients
+          \(\hat f(\rho_k)\) are \(2 \times 2\) matrices, and a shift mixes their columns.
+        </p>
+        <p>
+          The triple product needs a change of basis. On the ring, \(c_{k_1} c_{k_2}\) turns like
+          the single frequency \(k_1 + k_2\), and one conjugate coefficient cancels it. Here the
+          product of two coefficients is their tensor product \(\hat f(\rho_1) \otimes \hat
+          f(\rho_2)\), a \(4 \times 4\) matrix that transforms by \(\rho_1 \otimes \rho_2\). That
+          representation is reducible: \(\rho_i \otimes \rho_j\) splits into \(\rho_{i+j} \oplus
+          \rho_{i-j}\). Indices are read modulo \(n\) and up to sign, and a block whose index is a
+          multiple of \(n/2\) splits further into two \(1 \times 1\) irreps. For \(D_5\):
+        </p>
+        <figure class="table-figure" id="d5-table">
+          <div class="dictionary-scroll">
+            <table class="dictionary compact">
+              <thead>
+                <tr>
+                  <th>\(\otimes\)</th>
+                  <th>\(A_1\)</th>
+                  <th>\(A_2\)</th>
+                  <th>\(E_1\)</th>
+                  <th>\(E_2\)</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <th>\(A_1\)</th>
+                  <td>\(A_1\)</td>
+                  <td>\(A_2\)</td>
+                  <td>\(E_1\)</td>
+                  <td>\(E_2\)</td>
+                </tr>
+                <tr>
+                  <th>\(A_2\)</th>
+                  <td></td>
+                  <td>\(A_1\)</td>
+                  <td>\(E_1\)</td>
+                  <td>\(E_2\)</td>
+                </tr>
+                <tr>
+                  <th>\(E_1\)</th>
+                  <td></td>
+                  <td></td>
+                  <td>\(A_1 \oplus A_2 \oplus E_2\)</td>
+                  <td>\(E_1 \oplus E_2\)</td>
+                </tr>
+                <tr>
+                  <th>\(E_2\)</th>
+                  <td></td>
+                  <td></td>
+                  <td></td>
+                  <td>\(A_1 \oplus A_2 \oplus E_1\)</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <figcaption>
+            How products of the irreps of \(D_5\) split. \(A_1\) is the trivial irrep, \(A_2\)
+            sends flips to \(-1\), and \(E_k\) is the \(2 \times 2\) irrep \(\rho_k\) above. A cell
+            lists the irreps in the row's irrep \(\otimes\) the column's. The table is symmetric,
+            so only the upper half is shown, and sizes add up: \(E_1 \otimes E_1\) has \(2 \cdot 2
+            = 1 + 1 + 2\) dimensions.
+          </figcaption>
+        </figure>
+        <p>
+          On the ring the same table has a single frequency in each cell, \(k_1 + k_2\). The split
+          is a unitary change of basis \(C_{\rho_1, \rho_2}\), the matrix of
+          <dfn data-term="Clebsch-Gordan coefficient">Clebsch–Gordan coefficients</dfn>:
+        </p>
+        <p>
+          \[ C_{\rho_1, \rho_2}^\dagger\, (\rho_1 \otimes \rho_2)(g)\, C_{\rho_1, \rho_2} =
+          \bigoplus_{\rho \in \rho_1 \otimes \rho_2} \rho(g). \]
+        </p>
+        <p>
+          The \(G\)-bispectrum multiplies the product, in that basis, by the conjugate coefficients
+          at the irreps it contains:
+        </p>
+        <p>
+          \[ \beta_{\rho_1, \rho_2} = \big[\hat f(\rho_1) \otimes \hat f(\rho_2)\big]\, C_{\rho_1,
+          \rho_2} \Big[\bigoplus_{\rho \in \rho_1 \otimes \rho_2} \hat f(\rho)^\dagger\Big]\,
+          C_{\rho_1, \rho_2}^\dagger, \]
+        </p>
+        <p>
+          where the middle factor is block-diagonal, with one block \(\hat f(\rho)^\dagger\) for
+          each irrep in the split. Under a shift by \(h\) the first factor picks up \((\rho_1
+          \otimes \rho_2)(h)^\dagger = C \big[\bigoplus \rho(h)^\dagger\big] C^\dagger\) on the
+          right, the block-diagonal factor picks up \(\bigoplus \rho(h)\) on the left, and the two
+          cancel. On the ring every block is \(1 \times 1\), \(C = 1\), the split is the single
+          frequency \(k_1 + k_2\), and the formula is \(\beta_{k_1, k_2}\) up to conjugation.
+        </p>
+        <p>
+          Kakarala (1992) proved that the \(G\)-bispectrum determines a signal on a finite group up
+          to a shift when every Fourier coefficient is nonsingular. We call such signals
+          <dfn>generic</dfn>; on the ring the condition is that every \(c_k\) is nonzero. In both
+          cases the exceptions form a set of measure zero. On the sphere no such condition is
+          known, and generic means only that: outside a set of measure zero.
+        </p>
+        <p>
+          The same recipe works for any compact group: take the Fourier coefficients at two irreps,
+          decompose their tensor product with Clebsch–Gordan coefficients, and multiply the result
+          by the conjugate coefficients at the irreps it contains. The library is built on this
+          generality: each of its modules is the same construction for a different group and
+          domain, with its own irreps and Clebsch–Gordan tables.
+        </p>
+      </section>
+
+      <section class="l-body" id="sphere">
+        <h3>Sphere</h3>
+        <p>
+          On the sphere, under SO(3), the irreps are indexed by a <dfn>degree</dfn> \(\ell = 0, 1,
+          2, \dots\), and the corresponding basis functions are the
+          <dfn data-term="spherical harmonic">spherical harmonics</dfn> \(Y_\ell^m\), \(-\ell \le m
+          \le \ell\). The coefficients of degree \(\ell\) form a vector \(\mathbf F_\ell =
+          (a_\ell^{-\ell}, \dots, a_\ell^{\ell}) \in \mathbb C^{2\ell + 1}\), and a rotation \(R\)
+          acts on it by a unitary matrix of size \(2\ell + 1\), the
+          <dfn data-term="Wigner D-matrix">Wigner D-matrix</dfn> \(D^\ell(R)\):
+        </p>
+        <p>\[ \mathbf F_\ell \mapsto D^\ell(R)\, \mathbf F_\ell. \]</p>
+        <p>
+          The figure below shows a rotation on all coefficients at once: a block-diagonal matrix,
+          in which degrees never mix but the coefficients within a degree do. Rotations about the
+          pole are the exception, since they multiply each \(a_\ell^m\) by a phase, \(m\) times the
+          angle, exactly as on the ring. In practice a signal is kept up to some degree \(L\), its
+          <dfn>band-limit</dfn>, which leaves \((L + 1)^2\) coefficients. The power spectrum is
+          \(\|\mathbf F_\ell\|^2\), one number per degree. It is invariant because \(D^\ell\) is
+          unitary, and as incomplete as on the ring.
+        </p>
+        <p>
+          As on \(D_n\), the product of two coefficient vectors doesn't transform like a single
+          degree. The tensor product \(\mathbf F_{\ell_1} \otimes \mathbf F_{\ell_2}\) transforms
+          by \(D^{\ell_1} \otimes D^{\ell_2}\), which splits into one irrep of every degree from
+          \(|\ell_1 - \ell_2|\) to \(\ell_1 + \ell_2\). As on \(D_n\), Clebsch–Gordan coefficients
+          perform the split; for SO(3) they are the numbers \(C^{\ell m}_{\ell_1 m_1 \ell_2 m_2}\).
+          Projecting the product onto degree \(\ell\) and taking its inner product with \(\mathbf
+          F_\ell\) gives the spherical bispectrum,
+        </p>
+        <p>
+          \[ \beta_{\ell_1, \ell_2, \ell} = \sum_{m_1 + m_2 = m} C^{\ell m}_{\ell_1 m_1 \ell_2 m_2}
+          \; a_{\ell_1}^{m_1}\, a_{\ell_2}^{m_2}\, \overline{a_\ell^{m}}, \]
+        </p>
+        <p>
+          one number for each triple of degrees with \(|\ell_1 - \ell_2| \le \ell \le \ell_1 +
+          \ell_2\). The projected product and \(\mathbf F_\ell\) transform by the same unitary
+          \(D^\ell(R)\), so their inner product is invariant. On the ring a pair of frequencies
+          couples to the single frequency \(k_1 + k_2\), on \(D_n\) a pair of \(2 \times 2\) irreps
+          couples to two, three or four, and on the sphere a pair of degrees couples to a whole
+          range of them.
+        </p>
+        <aside class="note">
+          <span class="aside-kicker">Aside · what is proven</span>
+          <p>
+            The sphere is not covered by Kakarala's theorem. Kakarala (2012) defines the bispectrum
+            there, but the sphere is a homogeneous space of SO(3) rather than the group itself, so
+            its Fourier coefficients are the vectors \(\mathbf F_\ell\) rather than square
+            matrices, and a theorem that needs nonsingular matrices doesn't apply (Kondor, 2007).
+            Section 2 of the paper defines the bispectrum for finite groups, the disk and the
+            sphere.
+          </p>
+        </aside>
+      </section>
+      <figure class="l-body widget-figure">
+        <div data-figure="bridge" data-loading="Loading the sphere…"></div>
+        <div class="dictionary-scroll">
+          <table class="dictionary">
+            <thead>
+              <tr>
+                <th></th>
+                <th>Ring</th>
+                <th>\(D_n\)</th>
+                <th>Sphere</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <th>Group</th>
+                <td>SO(2), or \(C_n\) on \(n\) points: one angle</td>
+                <td>\(n\) turns and \(n\) flips of an \(n\)-gon</td>
+                <td>SO(3): an axis and an angle</td>
+              </tr>
+              <tr>
+                <th>Action</th>
+                <td>\(c_k \mapsto e^{ik\alpha} c_k\)</td>
+                <td>\(\hat f(\rho) \mapsto \hat f(\rho)\, \rho(h)^\dagger\)</td>
+                <td>\(\mathbf F_\ell \mapsto D^\ell(R)\, \mathbf F_\ell\)</td>
+              </tr>
+              <tr>
+                <th>Power spectrum</th>
+                <td>\(|c_k|^2\)</td>
+                <td>\(\hat f(\rho)\, \hat f(\rho)^\dagger\)</td>
+                <td>\(\|\mathbf F_\ell\|^2\)</td>
+              </tr>
+              <tr>
+                <th>Bispectrum</th>
+                <td>\(c_{k_1}\, c_{k_2}\, \overline{c_{k_1 + k_2}}\)</td>
+                <td>
+                  \(\big[\hat f(\rho_1) \otimes \hat f(\rho_2)\big]\, C \big[\bigoplus \hat
+                  f(\rho)^\dagger\big]\, C^\dagger\)
+                </td>
+                <td>
+                  \(\beta_{\ell_1, \ell_2, \ell}\), for \(|\ell_1 - \ell_2| \le \ell \le \ell_1 +
+                  \ell_2\)
+                </td>
+              </tr>
+              <tr>
+                <th>Truncation</th>
+                <td>highest frequency</td>
+                <td>none: finitely many irreps</td>
+                <td>band-limit \(L\)</td>
+              </tr>
+              <tr>
+                <th>Library</th>
+                <td><code>CnonCn</code>, <code>SO2onS1</code></td>
+                <td><code>DnonDn</code>, and <code>OctaonOcta</code> for the cube</td>
+                <td><code>SO3onS2</code></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <figcaption>
+          <ol class="steps">
+            <li>
+              <button type="button" class="step" data-step="turn">Turn about the pole.</button>
+              Both matrices are block-diagonal, and on the sphere each block is itself made of 2 ×
+              2 rotations by \(m\) times the angle, like the coefficients on the ring.
+            </li>
+            <li>
+              <button type="button" class="step" data-step="tilt">Tilt the axis.</button> The
+              sphere's blocks fill in: coefficients of the same degree mix. No block touches
+              another.
+            </li>
+            <li>
+              <button type="button" class="step" data-step="degree">Try another wave.</button> The
+              wave that wraps \(k\) times around the ring sits in block \(k\); the spherical
+              harmonic \(Y_\ell^\ell\), which wraps \(\ell\) times around the pole, sits in the
+              block of degree \(\ell\).
+            </li>
+          </ol>
+        </figcaption>
+      </figure>
+
+      <!-- 4. Selective bispectra -->
+      <section class="l-body chapter-head" id="selective">
+        <h2>Selective bispectra</h2>
+      </section>
+      <section class="l-body" id="cost">
+        <h3>Cost</h3>
+        <p>
+          The bispectrum has been known since 1953 and applies to any compact group, but it has
+          rarely been used in networks, mostly because of its size. Take a 256 × 256 image under
+          cyclic shifts. The FFT gives <span data-check="wall.pixels">65,536</span> coefficients,
+          and the bispectrum has an entry for every pair of frequencies:
+          <span data-check="wall.full">2,147,516,416</span> numbers, about
+          <span data-check="wall.gb">17</span> GB at 8 bytes each (our arithmetic), per image and
+          per forward pass. On any finite group the full bispectrum has \(O(|G|^2)\) scalars,
+          quadratic in the size of the signal.
+        </p>
+      </section>
+
+      <section class="l-body" id="ring-finite">
+        <h3>Ring and finite groups</h3>
+        <p>
+          Most of those entries are redundant. On the ring, \(c_0\) is real for a real signal, so
+          \(\beta_{0,0} = c_0^3\) gives \(c_0\) and \(\beta_{0,1} = c_0 |c_1|^2\) gives \(|c_1|\).
+          Each entry \(\beta_{1,k} = c_1 c_k \overline{c_{k+1}}\) then gives the next coefficient,
+        </p>
+        <p>\[ c_{k+1} = \overline{\beta_{1,k} / (c_1 c_k)}. \]</p>
+        <p>
+          Step 4 of the <a href="#ring-figure">ring figure</a> runs this chain. No entry fixes the
+          phase of \(c_1\); step 5 shows that any value of it reproduces the signal, rotated. For a
+          generic signal none of the divisions is by zero, so on a ring of \(n\) points this chain,
+          \(n\) of the \(n(n+1)/2\) distinct entries, determines the signal up to its pose, and
+          every other entry can be recomputed from it.
+        </p>
+        <p>
+          A <dfn>selective</dfn> bispectrum is a subset of this kind: enough entries to determine a
+          generic signal up to the group action, and a number of them that grows linearly with the
+          size of the signal rather than quadratically. For the image that is
+          <span data-check="wall.pixels">65,536</span> numbers, one per pixel. Mataigne et al.
+          (2024) select \(O(|G|)\) entries on any finite group by a search over its table of tensor
+          products, like the one for <a href="#d5-table">\(D_5\)</a> above, and prove that the
+          selection is complete for commutative groups, the dihedral groups and the rotations of a
+          cube, with or without reflections; for the 24 rotations of a cube it keeps 172 of the 576
+          scalars.
+        </p>
+      </section>
+
+      <section class="l-body" id="sphere-selective">
+        <h3>Sphere, degree by degree</h3>
+        <p>
+          On the sphere the full bispectrum grows more slowly than on a finite group, as \(L^3\)
+          for \((L + 1)^2\) coefficients, but each entry is a sum of Clebsch–Gordan terms. At \(L =
+          15\), the setting of the paper's experiments, a signal has
+          <span data-check="sphere15.coeffs">256</span> coefficients and the full bispectrum
+          <span data-check="sphere15.full">1,124</span> entries; at \(L = 64\) its
+          <span data-check="sphere64.full">70,257</span> entries add up
+          <span data-check="sphere64.fullTerms">267 million</span> such terms. Our selective
+          version keeps <span data-check="sphere15.sel">380</span> numbers at \(L = 15\) and
+          <span data-check="sphere64.sel">5,610</span> at \(L = 64\), for
+          <span data-check="sphere64.ratio">25</span> times less work.
+        </p>
+      </section>
+      <figure class="l-body widget-figure">
+        <div data-figure="wall" data-loading="Loading the counts…"></div>
+        <figcaption>
+          <ol class="steps">
+            <li>
+              <button type="button" class="step" data-step="small">32 × 32.</button> The image size
+              in the paper's timing table: <span data-check="torus32.n">1,024</span> numbers
+              against <span data-check="torus32.full">524,800</span>.
+            </li>
+            <li>
+              <button type="button" class="step" data-step="big">256 × 256.</button> One full
+              bispectrum fills most of a 24 GB GPU. The selective one is half a megabyte.
+            </li>
+            <li>
+              <button type="button" class="step" data-step="sphere">The sphere.</button> Solid
+              lines count numbers, dotted lines the terms summed to produce them. The selective
+              count stays close to the size of the signal itself (dashed).
+            </li>
+          </ol>
+        </figcaption>
+      </figure>
+      <section class="l-body">
+        <p>
+          On the sphere there is no recursion as simple as the ring's, since each degree brings
+          \(2\ell + 1\) unknowns at once. The paper's construction goes degree by degree. Once the
+          lower degrees are known, an entry \(\beta_{a, b, \ell}\) with \(a, b &lt; \ell\) is
+          linear in \(\mathbf F_\ell\), so the entries kept at degree \(\ell\) form a system in its
+          \(2\ell + 1\) real unknowns. Each degree keeps up to \(2\ell + 1\) such triple products,
+          a few self-couplings \(\beta_{\ell, \ell, \ell'}\), and a few product energies
+          \(\|(\mathbf F_{\ell_1} \otimes \mathbf F_{\ell_2})|_\ell\|^2\), the squared norms of
+          Clebsch–Gordan projections. They are chosen so that the system has full rank, and the
+          total is \(\Theta(L^2)\).
+        </p>
+      </section>
+
+      <section class="l-body" id="completeness">
+        <h3>Testing completeness</h3>
+        <p>
+          The figure below tests completeness numerically: a solver gets the invariant descriptor
+          and nothing else, and tries to recover the signal. It runs at \(L\) =
+          <span data-check="page.L">12</span>, as do the classifier figure and the playground
+          further down, so that a phone can solve it in a moment. At that band-limit the descriptor
+          has <span data-check="fp.n">254</span> numbers,
+          <span data-check="fp.triples">196</span> triple products and
+          <span data-check="fp.energies">58</span> product energies, for a signal of
+          <span data-check="coeffs.n">169</span> coefficients; the paper's, at \(L = 15\), has
+          <span data-check="sphere15.sel">380</span>. (The globe at the top runs at \(L\) =
+          <span data-check="hero.L">20</span>, to draw the coastlines more sharply.)
+        </p>
+        <aside class="note">
+          <span class="aside-kicker">Aside · microscopes</span>
+          <p>
+            Zvi Kam (1980) met the same scramble while reconstructing a molecule from electron
+            micrographs of many copies in unknown orientations, the problem cryo-EM solves today.
+            He showed that second-order statistics determine each degree only up to an unknown
+            orthogonal matrix, and proposed third-order statistics to fix them. Not in the paper;
+            see the references.
+          </p>
+        </aside>
+        <div class="caveat" id="caveat">
+          <span class="caveat-kicker">What is and isn't proven</span>
+          <p>
+            For commutative groups such as the ring, the dihedral groups, the rotations of a cube
+            and the disk, the selective bispectrum is proven complete for generic signals (Mataigne
+            et al., 2024; Myers Lantow and Miolane, 2026). For the sphere we have a count, a local
+            check and an experiment. The count: a smooth complete invariant needs at least
+            \((L+1)^2 - 3\) numbers, <span data-check="lower.n">166</span> at \(L = 12\), and this
+            one has <span data-check="fp.n">254</span>. The check: at every degree up to \(\ell =
+            100\), the Jacobian of the kept entries with respect to that degree's coefficients has
+            full rank at random signals, so each degree is locally determined by the lower ones.
+            Being local, this doesn't exclude a distant signal with the same invariants; the
+            signal's mirror image is one such candidate, and the construction includes an entry,
+            \(\beta_{2,3,4}\), that tells it apart. The experiment: the solver recovered all 32
+            test signals at \(L = 15\), digits and random band-limited signals, up to a rotation.
+            We conjecture that the selective spherical bispectrum is generically complete, that is
+            complete outside a set of measure zero, but we have no proof.
+          </p>
+        </div>
+      </section>
+      <figure class="l-body widget-figure">
+        <div data-figure="recon" data-loading="Loading the tables…"></div>
+        <figcaption>
+          <ol class="steps">
+            <li>
+              <button type="button" class="step" data-step="turn">Turn it.</button> The
+              <span data-check="coeffs.n">169</span> coefficients (middle row) move. The
+              <span data-check="fp.n">254</span> numbers of the descriptor (top row) don't.
+            </li>
+            <li>
+              <button type="button" class="step" data-step="scramble">Same power spectrum.</button>
+              Each degree gets its own random rotation. The power spectrum (bottom row) is
+              unchanged, the digit is gone, and the descriptor has moved: the ring's scramble, on
+              the sphere.
+            </li>
+            <li>
+              <button type="button" class="step" data-step="rebuild">Rebuild.</button> The solver
+              sees the <span data-check="fp.n">254</span> numbers and nothing else. It fits the
+              lowest degrees from random starts, then adds one degree at a time (the scrubber
+              replays it). The result comes back in a pose of its own, the one thing the descriptor
+              discards; tick “align to signal” to compare.
+            </li>
+            <li>
+              <button type="button" class="step" data-step="map">Flip to 2D.</button> All
+              <span data-check="full.n">616</span> triple products at \(L = 12\), one panel per
+              degree. The descriptor keeps the <span data-check="fp.triples">196</span> outlined
+              ones, plus the product energies. After the rebuild every cell matches, kept or not:
+              the dropped ones carried no extra information.
+            </li>
+          </ol>
+        </figcaption>
+      </figure>
+
+      <!-- 5. Python library (PyTorch) -->
+      <section class="l-body chapter-head" id="library">
+        <h2>Python library (PyTorch)</h2>
+      </section>
+      <section class="l-body" id="modules">
+        <h3>Modules</h3>
+        <p>Here is the ring's chain again, as a module:</p>
+        <pre data-snippet="interface"><code><span class="k">import</span> torch
+<span class="k">from</span> bispectrum <span class="k">import</span> CnonCn, OctaonOcta, SO2onDisk
+
+f = torch.randn(16, 8)        <span class="c"># 16 signals on a ring of 8 points</span>
+bsp = CnonCn(n=8)             <span class="c"># selective by default</span>
+beta = bsp(f)                 <span class="c"># (16, 8): the chain, n entries</span>
+f_rec = bsp.invert(beta)      <span class="c"># complex: f up to the chain's free phase</span>
+
+<span class="c"># the same interface for other groups</span>
+beta_o = OctaonOcta()(torch.randn(16, 24))         <span class="c"># the 24 rotations of a cube</span>
+beta_d = SO2onDisk(L=32)(torch.randn(16, 32, 32))  <span class="c"># images on a disk</span></code></pre>
+        <p>
+          <code>bispectrum</code> is a PyTorch library of seven such modules, one for each group
+          and the domain it acts on, named <code>{Group}on{Domain}</code>:
+        </p>
+        <ul class="modules">
+          <li>
+            <img data-brand="glyph-CnonCn" alt="" width="36" height="36" />
+            <code>CnonCn</code><span>a ring of \(n\) points, turned in \(n\) steps</span>
+          </li>
+          <li>
+            <img data-brand="glyph-SO2onS1" alt="" width="36" height="36" />
+            <code>SO2onS1</code><span>a circle, sampled at \(n\) points</span>
+          </li>
+          <li>
+            <img data-brand="glyph-TorusOnTorus" alt="" width="36" height="36" />
+            <code>TorusOnTorus</code><span>images and volumes under cyclic shifts</span>
+          </li>
+          <li>
+            <img data-brand="glyph-DnonDn" alt="" width="36" height="36" />
+            <code>DnonDn</code><span>the \(2n\) turns and flips of a polygon</span>
+          </li>
+          <li>
+            <img data-brand="glyph-SO2onDisk" alt="" width="36" height="36" />
+            <code>SO2onDisk</code><span>an image on a disk, rotated in the plane</span>
+          </li>
+          <li>
+            <img data-brand="glyph-SO3onS2" alt="" width="36" height="36" />
+            <code>SO3onS2</code><span>a signal on the sphere, rotated in space</span>
+          </li>
+          <li>
+            <img data-brand="glyph-OctaonOcta" alt="" width="36" height="36" />
+            <code>OctaonOcta</code><span>the 24 rotations of a cube</span>
+          </li>
+        </ul>
+        <p>
+          Each is a <code>torch.nn.Module</code> without parameters. Calling it returns the
+          selective bispectrum, <code>selective=False</code> returns the full one where it is
+          implemented, and <code>invert</code> recovers the signal where an inversion is known. The
+          modules are differentiable, so they can sit anywhere in a network; two placements are
+          natural.
+        </p>
+      </section>
+
+      <section class="l-body" id="usage">
+        <h3>Example usage</h3>
+      </section>
+      <figure class="l-body pipeline">
+        <div>
+          <span class="pl-title">In front of an MLP</span>
+          <ol class="pl-row">
+            <li>spherical signal<span class="pl-meta">64 × 128 grid</span></li>
+            <li class="pl-ours">
+              <img data-brand="glyph-SO3onS2" alt="" width="28" height="28" />
+              <span><code>SO3onS2</code><span class="pl-meta">380 numbers, no weights</span></span>
+            </li>
+            <li>MLP</li>
+            <li class="pl-end">label</li>
+          </ol>
+        </div>
+        <div>
+          <span class="pl-title">In place of pooling</span>
+          <ol class="pl-row">
+            <li>image<span class="pl-meta">H × W</span></li>
+            <li>group convolution<span class="pl-meta">C × 8 poses × H × W</span></li>
+            <li class="pl-ours">
+              <img data-brand="glyph-CnonCn" alt="" width="28" height="28" />
+              <span><code>CnonCn</code><span class="pl-meta">instead of max pooling</span></span>
+            </li>
+            <li>head</li>
+            <li class="pl-end">label</li>
+          </ol>
+        </div>
+      </figure>
+      <section class="l-body">
+        <p>
+          <strong>In front of an MLP.</strong> When the input is itself a signal on the sphere, the
+          selective bispectrum can be the whole feature extractor, and the classifier on top sees
+          the pose only through the grid's sampling error. This is the model of the paper's
+          Spherical MNIST experiment:
+        </p>
+        <pre data-snippet="sphere"><code><span class="k">import</span> torch
+<span class="k">from</span> torch <span class="k">import</span> nn
+<span class="k">from</span> bispectrum <span class="k">import</span> SO3onS2
+
+bsp = SO3onS2(lmax=15, nlat=64, nlon=128)  <span class="c"># 380 numbers, real or imaginary</span>
+head = nn.Sequential(
+    nn.Linear(760, 256), nn.BatchNorm1d(256), nn.ReLU(),
+    nn.Linear(256, 128), nn.BatchNorm1d(128), nn.ReLU(),
+    nn.Linear(128, 10),
+)
+
+beta = bsp(x)                              <span class="c"># x: (batch, 64, 128)</span>
+z = torch.cat([beta.real, beta.imag], dim=-1)
+z = z.sign() * z.abs().log1p()             <span class="c"># signed log: they span many scales</span>
+logits = head(z)</code></pre>
+        <p>
+          <strong>In place of pooling.</strong> A group convolution applies each filter in every
+          pose of a group, say the 8 rotations by 45°, so its feature maps carry an extra axis with
+          one slot per group element. Rotating the input by 45° rotates the feature maps and shifts
+          them cyclically along that axis. Equivariant networks usually reach an invariant by
+          taking a max over the axis, which keeps one response out of 8, the
+          <a href="#orbits">max pooling</a> we started from. The axis is a signal on a ring of 8
+          points, so <code>CnonCn</code> can take the place of the max:
+        </p>
+        <pre data-snippet="pooling"><code><span class="k">import</span> torch
+<span class="k">import</span> torch.nn.functional <span class="k">as</span> F
+<span class="k">from</span> bispectrum <span class="k">import</span> CnonCn
+
+<span class="c"># x: output of a group convolution, (batch, channels, 8 poses, height, width)</span>
+before = x.max(dim=2).values               <span class="c"># keep the largest of the 8</span>
+
+bsp = CnonCn(n=8)                          <span class="c"># keep everything but the pose</span>
+B, C, G, H, W = x.shape
+<span class="c"># one ring of 8 per channel and pixel</span>
+beta = bsp(x.permute(0, 1, 3, 4, 2).reshape(-1, G))
+z = torch.cat([beta.real, beta.imag], dim=-1)
+z = z.sign() * z.abs().log1p()
+z = z.reshape(B, C, H, W, -1).permute(0, 1, 4, 2, 3).reshape(B, -1, H, W)
+after = F.relu(proj(z))                    <span class="c"># proj = nn.Conv2d(16 * C, C, 1)</span></code></pre>
+      </section>
+
+      <section class="l-body" id="speed">
+        <h3>Speed</h3>
+        <p>
+          Two implementation details make the modules fast enough to use as layers. The first is
+          sparsity. Most Clebsch–Gordan coefficients are zero, so when a module is built it lists
+          every nonzero term of every kept entry once: the indices of its three coefficients, its
+          weight and its output entry. The forward pass is then a gather, a product and a
+          scatter-add, with no loop over degrees. From <code>so3_on_s2.py</code>, with names
+          shortened:
+        </p>
+        <pre><code>prods = flat[:, i1] * flat[:, i2] * cg * torch.conj(flat[:, i3])
+_scatter_add_complex(result, entry, prods)</code></pre>
+        <p>
+          At \(L = 64\) the list has
+          <span data-check="sphere64.selTerms">10.8 million</span> terms, against
+          <span data-check="sphere64.fullTerms">267 million</span> for the full bispectrum.
+        </p>
+        <p>
+          The second is launch overhead. At batch 16 a forward pass is a few dozen small kernels,
+          and the time goes into launching them from Python rather than running them. With autograd
+          off, each module records its forward pass as a CUDA graph on the first input it sees and
+          replays it for every later input of the same shape, with nothing to configure. An input
+          of another shape runs without the graph.
+        </p>
+      </section>
+      <figure class="l-body widget-figure">
+        <div data-figure="bench" data-loading="Loading the timings…"></div>
+        <figcaption>
+          Forward pass of <code>bispectrum</code> <span data-check="bench.version">0.5.0</span> on
+          one NVIDIA H100, batch 16, median wall-clock in milliseconds. “Training” runs with
+          autograd on, “inference” replays the CUDA graph, “full” is the full bispectrum where the
+          library implements it. We reran the paper's benchmark on this release; the paper's own
+          table is for 0.4.1, before the replay reached every module. The benchmark does not time
+          the full bispectrum on the sphere; in the paper's table it takes 53.6 ms.
+        </figcaption>
+      </figure>
+      <section class="l-body">
+        <p>
+          Every module in the table takes under a millisecond with autograd on, from
+          <span data-check="bench.trainMin">0.07</span> to
+          <span data-check="bench.trainMax">0.67</span> ms, and
+          <span data-check="bench.infMin">0.03</span> to
+          <span data-check="bench.infMax">0.20</span> ms at inference.
+        </p>
+      </section>
+
+      <!-- 6. Experiments -->
+      <section class="l-body chapter-head" id="experiments">
+        <h2>Experiments</h2>
+      </section>
+      <section class="l-body" id="spherical-mnist">
+        <h3>Spherical MNIST</h3>
+        <p>
+          The figure below runs three small classifiers on the same spherical digit, all trained on
+          upright digits only: an MLP on the selective bispectrum, a CNN on pixels, and an MLP on
+          the power spectrum.
+        </p>
+      </section>
+      <figure class="l-body widget-figure">
+        <div data-figure="classify" data-loading="Loading the classifiers…"></div>
+        <figcaption>
+          <ol class="steps">
+            <li>
+              <button type="button" class="step" data-step="spin">Spin it.</button>
+              The descriptor's <span data-check="fp.n">254</span> cells don't change, and neither
+              do the bars beside them: the bispectrum model is right on
+              <span data-check="mlp.nr">95.7%</span> of upright test digits and
+              <span data-check="mlp.r">95.7%</span> of rotated ones. The CNN is the most accurate
+              of the three upright (<span data-check="cnn.nr">99.1%</span>) and close to chance
+              once the digit turns (<span data-check="cnn.r">13.3%</span>).
+            </li>
+            <li>
+              <button type="button" class="step" data-step="power">Power spectrum.</button>
+              The third model reads <span data-check="power.n">13</span> numbers that are just as
+              invariant, and is right <span data-check="power.nr">77.6%</span> of the time.
+            </li>
+            <li>
+              <button type="button" class="step" data-step="scramble">Scramble.</button>
+              Same power spectrum, each degree rotated on its own, and the digit is gone. The
+              power-spectrum model can't tell, since its
+              <span data-check="power.n">13</span> numbers haven't changed; the descriptor has.
+            </li>
+            <li>
+              <button type="button" class="step" data-step="six">Turn the 6 upside down.</button>
+              It is now a 9, and an invariant model has no way to know. Of the bispectrum model's
+              <span data-check="mlp.errors">426</span> mistakes on the
+              <span data-check="test.n">10,000</span> test digits,
+              <span data-check="mlp.sixnine">117</span> are a 6 and a 9 taken for each other.
+            </li>
+          </ol>
+        </figcaption>
+      </figure>
+      <section class="l-body">
+        <p>
+          The paper runs this experiment at \(L = 15\), over five seeds and against stronger
+          baselines, so its numbers differ from the figure's in the last digit. The bispectrum with
+          its MLP reaches 95.8% on rotated digits, not significantly different from a spherical CNN
+          of matched size (96.1%, \(p = 0.14\)) and a quarter of a point below a tensor-product
+          network (\(p = 0.006\)), while running 4 times faster than the first and 364 times faster
+          than the second. The pixel CNN falls from 99.1% to 13.4%. The power spectrum reaches
+          77.7%, and 80.1% with an MLP 48 times larger.
+        </p>
+      </section>
+
+      <section class="l-body" id="pooling-results">
+        <h3>As a pooling layer</h3>
+        <p>
+          The paper puts the bispectrum into two equivariant networks in place of the pooling layer
+          and compares it with up to five alternatives, 46 comparisons in all, and it is never
+          significantly worse. On tissue images under 8 rotations (PatchCamelyon) everything ties,
+          in tests that three seeds per model make sensitive only to gaps of about 0.025 AUC. On 3D
+          organ scans under the cube's 24 rotations (OrganMNIST3D) it beats max pooling by 5
+          points, 78.5% against 73.6%, and its smallest model, at 0.46 million parameters, beats
+          max pooling's largest, at 6.0 million, by 2.6 points. The gain over max pooling
+          disappears with 250 training examples or fewer and is not significant at the largest
+          width. Our guess, and it is only a guess: the more a max discards, the more there is to
+          recover, and a max over the cube's 24 rotations discards more than one over 8.
+        </p>
+        <aside class="note">
+          <p>
+            Protocols, seeds and significance tests are in the paper's experiments section and its
+            appendices on pooling and Spherical MNIST.
+          </p>
+        </aside>
+        <details class="foldout">
+          <summary>
+            <span class="foldout-kicker">Fold-out · skippable</span>When not to use it
+          </summary>
+          <p>
+            <strong>When the pose is the label.</strong> As step 4 of the classifier figure shows,
+            an invariant cannot tell a 6 from a 9. If the label depends on orientation, use a
+            smaller group or keep the pose.
+          </p>
+          <p>
+            <strong>When the symmetry is unknown.</strong> Each module is invariant to one specific
+            group. If you don't know the symmetry, or there are several, data augmentation or a
+            more flexible equivariant network is a better fit.
+          </p>
+          <p>
+            <strong>When data is scarce, on the sphere.</strong> A fixed invariant with an MLP
+            needs more examples than a spherical CNN that learns its features: in the paper the
+            spherical CNN leads at every training-set size below the full one, by 13.0 points at
+            100 examples.
+          </p>
+          <p>
+            <strong>With a ReLU in the wrong place.</strong> In the pooling head, the ReLU goes
+            after the first learned projection, as in the <a href="#usage">pooling snippet</a>. A
+            ReLU placed before it zeroes every negative entry of the bispectrum, which costs 4 to 5
+            points on OrganMNIST3D.
+          </p>
+          <p>
+            <strong>When a coefficient is zero.</strong> The ring's chain divides by \(c_0, \dots,
+            c_{n-2}\), and <code>CnonCn.invert</code> raises an error when one of them vanishes.
+            Two common kinds of signal do this: zero-mean signals (\(c_0 = 0\), common after
+            normalisation) and signals smoother than the grid, whose top coefficients vanish. The
+            output is still invariant, but the chain no longer determines the signal; other entries
+            of the full table can route around the gap (\(\beta_{2,3}\) ties \(c_2\), \(c_3\) and
+            \(c_5\)).
+          </p>
+          <p>
+            <strong>When you need a proof, on the sphere.</strong> Completeness there is a
+            conjecture (<a href="#caveat">see above</a>), and the solver that inverts the invariant
+            lives in the paper's experiment code; <code>SO3onS2.invert</code> raises
+            <code>NotImplementedError</code>.
+          </p>
+        </details>
+      </section>
+
+      <!-- 7. Try it -->
+      <section class="l-body" id="playground">
+        <h2>Try it</h2>
+        <p>
+          Draw something on the pad: a letter, a face, a continent of your own. It starts with a 0,
+          so clear it first if it's in the way. When you lift the pen, the page computes the
+          <span data-check="fp.n">254</span> numbers of your drawing's selective bispectrum and
+          gives only those to the solver; the reconstruction appears on the right.
+        </p>
+        <p>
+          Very symmetric drawings, a single dot or a centred ring, are the hard case: they are
+          unchanged by every rotation about some axis, so they are far from generic. If the solver
+          gives up, press Reconstruct for other random starts.
+        </p>
+      </section>
+      <figure class="l-body widget-figure">
+        <div data-figure="playground" data-loading="Loading the playground…"></div>
+        <figcaption>
+          Everything runs in your browser, at \(L = 12\). The bars are the descriptor of your
+          drawing and the dots that of the reconstruction. The Earth and the ten digits are in the
+          picker too.
+        </figcaption>
+      </figure>
+
+      <section class="l-body" id="references">
+        <h2>References</h2>
+        <p>
+          The results quoted here come from the paper,
+          <a href="https://arxiv.org/abs/2605.07270"
+            ><em>bispectrum: Selective G-Bispectra Made Practical</em></a
+          >, which has the proofs, the protocols and the tables. The asides, the small classifiers
+          behind the figures and the rerun of the benchmark are additions of this page. The library
+          is on <a href="https://github.com/geometric-intelligence/bispectrum">GitHub</a> and
+          installs with <code>pip install bispectrum</code> on Python 3.12. The numbers quoted here
+          are those of the camera-ready version; an earlier version on arXiv may differ in places.
+          If you use the library, please cite:
+        </p>
+        <pre class="bibtex"><code>@article{mathe2026bispectrum,
+  title   = {bispectrum: Selective $G$-Bispectra Made Practical},
+  author  = {Mathe, Johan and {Myers Lantow}, Adele and Mataigne, Simon
+             and Miolane, Nina},
+  journal = {arXiv preprint arXiv:2605.07270},
+  year    = {2026}
+}</code></pre>
+        <ol class="refs">
+          <li>
+            J. W. Tukey (1953). The spectral representation and transformation properties of the
+            higher moments of stationary time series. Reprinted in
+            <em>The Collected Works of John W. Tukey</em>, vol. 1, 165–184, Wadsworth, 1984.
+          </li>
+          <li>
+            R. C. Jennison (1958). A phase sensitive interferometer technique for the measurement
+            of the Fourier transforms of spatial brightness distributions of small angular extent.
+            <em>Monthly Notices of the Royal Astronomical Society</em> 118(3), 276–284.
+          </li>
+          <li>
+            Z. Kam (1980). The reconstruction of structure from electron micrographs of randomly
+            oriented particles. <em>Journal of Theoretical Biology</em> 82(1), 15–39.
+          </li>
+          <li>
+            A. W. Lohmann, G. Weigelt and B. Wirnitzer (1983). Speckle masking in astronomy: triple
+            correlation theory and applications. <em>Applied Optics</em> 22(24), 4028–4037.
+          </li>
+          <li>
+            G. B. Giannakis (1989). Signal reconstruction from multiple correlations: frequency-
+            and time-domain approaches. <em>Journal of the Optical Society of America A</em> 6(5),
+            682–697.
+          </li>
+          <li>
+            R. Kakarala (1992). <em>Triple Correlation on Groups</em>. PhD thesis, University of
+            California, Irvine.
+          </li>
+          <li>
+            R. Kondor (2007). A novel set of rotationally and translationally invariant features
+            for images based on the non-commutative bispectrum.
+            <a href="https://arxiv.org/abs/cs/0701127">arXiv:cs/0701127</a>.
+          </li>
+          <li>
+            R. Kakarala (2012). The bispectrum as a source of phase-sensitive invariants for
+            Fourier descriptors: a group-theoretic approach.
+            <em>Journal of Mathematical Imaging and Vision</em> 44(3), 341–353.
+          </li>
+          <li>
+            T. S. Cohen and M. Welling (2016). Group equivariant convolutional networks.
+            <em>ICML</em>.
+          </li>
+          <li>
+            T. S. Cohen, M. Geiger, J. Köhler and M. Welling (2018). Spherical CNNs. <em>ICLR</em>.
+          </li>
+          <li>
+            B. S. Veeling, J. Linmans, J. Winkens, T. Cohen and M. Welling (2018). Rotation
+            equivariant CNNs for digital pathology. <em>MICCAI</em>. The PatchCamelyon benchmark.
+          </li>
+          <li>
+            J. Yang, R. Shi, D. Wei, Z. Liu, L. Zhao, B. Ke, H. Pfister and B. Ni (2023). MedMNIST
+            v2: a large-scale lightweight benchmark for 2D and 3D biomedical image classification.
+            <em>Scientific Data</em> 10, 41. The source of OrganMNIST3D.
+          </li>
+          <li>
+            S. Mataigne, J. Mathe, S. Sanborn, C. Hillar and N. Miolane (2024). The selective
+            G-bispectrum and its inversion: applications to G-invariant networks.
+            <em>NeurIPS</em> 37, 115682–115711.
+          </li>
+          <li>
+            A. Myers Lantow and N. Miolane (2026). Selective disk bispectrum: a complete and
+            rotation invariant image descriptor.
+            <a href="https://arxiv.org/abs/2511.19706">arXiv:2511.19706</a>.
+          </li>
+        </ol>
+      </section>
+    </main>
+
+    <footer class="l-body">
+      <img class="wordmark" data-brand="wordmark" alt="bispectrum" width="138" height="22" />
+      <p>
+        Digits from MNIST (LeCun, Cortes and Burges), lifted to the sphere by stereographic
+        projection as in Cohen et al. (2018) and mirrored to read from outside the sphere. Land
+        mask from <code>global-land-mask</code> (GLOBE elevation data).
+      </p>
+    </footer>
+
+    <script type="module" src="./src/main.ts"></script>
+  </body>
+</html>
