@@ -24,6 +24,31 @@ const bench = (): Bench => loadDataJson<Bench>('bench.json');
 const sphere = (key: keyof SphereCounts, L: number): number =>
   loadDataJson<Counts>('counts.json').sphere[key][L - 1]!;
 
+/** Clebsch–Gordan terms of the entry at degrees `(a, b, c)`: pairs `(m1, m2)`, `|m1 + m2| <= c`. */
+export function cgTerms(a: number, b: number, c: number): number {
+  let n = 0;
+  for (let m = -a; m <= a; m++) n += Math.max(0, Math.min(b, c - m) - Math.max(-b, -c - m) + 1);
+  return n;
+}
+
+/**
+ * The full spherical bispectrum on a real signal with each entry counted once: orderings of a
+ * triple of degrees are proportional, and an entry with an odd sum and a repeated degree is zero.
+ */
+export function distinctFull(L: number): { entries: number; terms: number } {
+  let [entries, terms] = [0, 0];
+  for (let a = 0; a <= L; a++) {
+    for (let b = a; b <= L; b++) {
+      for (let c = b; c <= Math.min(a + b, L); c++) {
+        if ((a + b + c) % 2 === 1 && (a === b || b === c)) continue;
+        entries++;
+        terms += cgTerms(a, b, c);
+      }
+    }
+  }
+  return { entries, terms };
+}
+
 /** Wrong answers in a confusion matrix `[true digit][predicted digit]`. */
 const errors = (c: number[][]): number =>
   c.flat().reduce((a, b) => a + b, 0) - c.reduce((a, row, i) => a + row[i]!, 0);
@@ -75,6 +100,10 @@ export const CHECKS: Record<string, () => string> = {
   'sphere64.fullTerms': () => `${Math.round(sphere('full_terms', 64) / 1e6)} million`,
   'sphere64.ratio': () => (sphere('full_terms', 64) / sphere('selective_terms', 64)).toFixed(0),
   'sphere64.selTerms': () => `${(sphere('selective_terms', 64) / 1e6).toFixed(1)} million`,
+  'sphere15.distinct': () => int(distinctFull(15).entries),
+  'sphere64.distinct': () => int(distinctFull(64).entries),
+  'sphere64.distinctRatio': () =>
+    (distinctFull(64).terms / sphere('selective_terms', 64)).toFixed(0),
   'bench.version': () => bench().version,
   'bench.trainMin': () => ms(Math.min(...bench().rows.map((r) => r.train_ms))),
   'bench.trainMax': () => ms(Math.max(...bench().rows.map((r) => r.train_ms))),

@@ -217,7 +217,7 @@ class BridgeFigure implements Figure {
     const k = this.k;
     this.readout.textContent =
       this.axis === 'pole' && isPole(this.dragged)
-        ? `About the pole the sphere turns like the ring: inside each block, its numbers only ` +
+        ? `About the pole the sphere turns like the ring. Inside each block, its numbers only ` +
           `rotate in pairs, by m times the angle. The wave that wraps ${k} times sits in block ${k}.`
         : `About any other axis the ${2 * k + 1} numbers of degree ${k} mix with each other and ` +
           `the whole block fills in. Nothing ever leaks into another block.`;

@@ -102,7 +102,7 @@ interface Solve {
 }
 
 const RETRY_HINT =
-  'Hit Reconstruct for other random starts; very symmetric signals (a dot, a centred ring) are the hard case and may keep failing.';
+  'Hit Reconstruct for other random starts. Very symmetric signals (a dot, a centred ring) are the hard case and may keep failing.';
 
 /** States the figure caption can put the widget in, one per numbered step. */
 export type ReconStep = 'turn' | 'scramble' | 'rebuild' | 'map';
@@ -825,7 +825,7 @@ export class ReconWidget {
       case 'done':
         text =
           s.worstAligned > COLLISION_REL
-            ? `A candidate matches the descriptor to ${sci(s.featureRel ?? NaN)} but stays ${sci(s.worstAligned)} away from every rotation of the signal. That would be a second signal with the same descriptor: if it reproduces, please tell us.`
+            ? `A candidate matches the descriptor to ${sci(s.featureRel ?? NaN)} but stays ${sci(s.worstAligned)} away from every rotation of the signal. That would be a second signal with the same descriptor. If it reproduces, please tell us.`
             : `Recovered ${dim(s.lmax)} coefficients from the ${this.invariant(s.lmax).n} numbers of the descriptor in ${secs(s.ms)} (${plural(s.seedTried, 'random start')}). Descriptor mismatch ${sci(s.featureRel ?? NaN)}.${err}`;
         break;
       case 'stopped':

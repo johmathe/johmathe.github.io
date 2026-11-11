@@ -316,8 +316,8 @@ class RingFigure implements Figure {
       `c${sub(k + 1)} = conj(β(1, ${k}) / (c₁ c${sub(k)})).`;
     return s <= K
       ? line
-      : `${line} All ${K + 1} coefficients are recovered, up to φ₁: every value of it gives ` +
-          'the same curve, turned.';
+      : `${line} All ${K + 1} coefficients are recovered up to φ₁, and every value of φ₁ ` +
+          'gives the same curve, turned.';
   }
 
   // ------------------------------------------------------------------ actions
