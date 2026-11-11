@@ -693,7 +693,7 @@ class RingFigure implements Figure {
     ctx.textAlign = 'left';
     ctx.textBaseline = 'alphabetic';
     ctx.fillText(
-      `outlined: the chain, ${K + 1} entries; orange rim: used so far`,
+      `outlined: the chain, ${K + 1} entries · orange rim: used so far`,
       L.gutter,
       L.height - 6,
     );
