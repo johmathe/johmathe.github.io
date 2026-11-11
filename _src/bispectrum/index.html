@@ -355,7 +355,7 @@
                 <tr>
                   <th>Group</th>
                   <th>Irreps</th>
-                  <th>A coefficient</th>
+                  <th>Coefficient</th>
                   <th>Total size</th>
                 </tr>
               </thead>
@@ -363,43 +363,45 @@
                 <tr>
                   <th>\(\mathbb{R}\), shifts of a line</th>
                   <td>\(e^{i\omega x}\) for \(\omega \in \mathbb{R}\), all \(1 \times 1\)</td>
-                  <td>a complex number</td>
-                  <td>a continuum</td>
+                  <td>complex number</td>
+                  <td>function on \(\mathbb{R}\)</td>
                 </tr>
                 <tr>
                   <th>\(C_n\), turns of a ring of \(n\) points</th>
                   <td>\(n\), all \(1 \times 1\), one per frequency</td>
-                  <td>a complex number</td>
+                  <td>complex number</td>
                   <td>\(n\)</td>
                 </tr>
                 <tr>
                   <th>SO(2), up to frequency \(K\)</th>
                   <td>\(e^{ik\alpha}\) for \(|k| \le K\), all \(1 \times 1\)</td>
-                  <td>a complex number</td>
+                  <td>complex number</td>
                   <td>\(2K + 1\)</td>
                 </tr>
                 <tr>
                   <th>\(D_n\), turns and flips of an \(n\)-gon</th>
                   <td>two \(1 \times 1\) (four for even \(n\)), the rest \(2 \times 2\)</td>
-                  <td>a \(1 \times 1\) or \(2 \times 2\) matrix</td>
+                  <td>\(1 \times 1\) or \(2 \times 2\) matrix</td>
                   <td>\(2n\)</td>
                 </tr>
                 <tr>
                   <th>\(O\), 24 rotations of a cube</th>
-                  <td>of sizes 1, 1, 2, 3, 3, and \(1 + 1 + 4 + 9 + 9 = 24\)</td>
-                  <td>a \(d \times d\) matrix</td>
+                  <td>five, of sizes 1, 1, 2, 3, 3, and \(1 + 1 + 4 + 9 + 9 = 24\)</td>
+                  <td>\(d \times d\) matrix</td>
                   <td>\(24\)</td>
                 </tr>
                 <tr>
                   <th>SO(3) on the sphere</th>
                   <td>one per \(\ell = 0, \dots, L\), of size \(2\ell + 1\)</td>
-                  <td>a vector of length \(2\ell + 1\)</td>
+                  <td>vector of length \(2\ell + 1\)</td>
                   <td>\((L + 1)^2\)</td>
                 </tr>
               </tbody>
             </table>
           </div>
           <figcaption>
+            The Fourier transform on six groups: the irreps, the shape of one coefficient \(\hat
+            f(\rho)\), and how many numbers the whole transform holds.
             “Total size” is the number of complex numbers in \(\hat f\), cut off at \(K\) or \(L\)
             where needed. The first three rows are the Fourier transform (where the sum is an
             integral), the discrete Fourier transform and Fourier series.
