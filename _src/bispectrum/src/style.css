@@ -99,6 +99,25 @@ a {
   margin-bottom: 40px;
 }
 
+.venue {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  margin: 0 0 20px;
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--orange-text);
+}
+
+.venue::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--rule);
+}
+
 h1 {
   margin: 0 0 16px;
   font-size: 40px;

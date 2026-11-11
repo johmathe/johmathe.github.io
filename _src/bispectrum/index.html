@@ -10,7 +10,10 @@
     />
     <!-- Link previews need absolute URLs: build with SITE_URL set (see vite.config.ts). -->
     <meta property="og:type" content="article" />
-    <meta property="og:title" content="bispectrum: Selective G-Bispectra Made Practical" />
+    <meta
+      property="og:title"
+      content="bispectrum: Selective G-Bispectra Made Practical (NeurIPS 2026)"
+    />
     <meta
       property="og:description"
       content="The bispectrum is a rotation-invariant feature that, unlike the power spectrum, keeps the relative phases of a signal's Fourier coefficients. On a finite group its size is quadratic in the signal. These are notes on selective bispectra, which keep a linear number of its entries, and on bispectrum, our PyTorch library for them."
@@ -28,6 +31,7 @@
   <body>
     <header class="masthead">
       <div class="l-body">
+        <p class="venue">NeurIPS 2026</p>
         <h1>
           <img
             class="wordmark-title"
@@ -401,10 +405,10 @@
           </div>
           <figcaption>
             The Fourier transform on six groups: the irreps, the shape of one coefficient \(\hat
-            f(\rho)\), and how many numbers the whole transform holds.
-            “Total size” is the number of complex numbers in \(\hat f\), cut off at \(K\) or \(L\)
-            where needed. The first three rows are the Fourier transform (where the sum is an
-            integral), the discrete Fourier transform and Fourier series.
+            f(\rho)\), and how many numbers the whole transform holds. “Total size” is the number
+            of complex numbers in \(\hat f\), cut off at \(K\) or \(L\) where needed. The first
+            three rows are the Fourier transform (where the sum is an integral), the discrete
+            Fourier transform and Fourier series.
           </figcaption>
         </figure>
         <p>
@@ -1195,19 +1199,24 @@ _scatter_add_complex(result, entry, prods)</code></pre>
           The results quoted here come from the paper,
           <a href="https://arxiv.org/abs/2605.07270"
             ><em>bispectrum: Selective G-Bispectra Made Practical</em></a
-          >, which has the proofs, the protocols and the tables. The asides, the small classifiers
-          behind the figures and the rerun of the benchmark are additions of this page. The library
-          is on <a href="https://github.com/geometric-intelligence/bispectrum">GitHub</a> and
-          installs with <code>pip install bispectrum</code> on Python 3.12. The numbers quoted here
-          are those of the camera-ready version, and an earlier version on arXiv may differ in
-          places. If you use the library, please cite:
+          >
+          (NeurIPS 2026), which has the proofs, the protocols and the tables. The asides, the small
+          classifiers behind the figures and the rerun of the benchmark are additions of this page.
+          The library is on
+          <a href="https://github.com/geometric-intelligence/bispectrum">GitHub</a> and installs
+          with <code>pip install bispectrum</code> on Python 3.12. The numbers quoted here are
+          those of the camera-ready version, and an earlier version on arXiv may differ in places.
+          If you use the library, please cite:
         </p>
-        <pre class="bibtex"><code>@article{mathe2026bispectrum,
-  title   = {bispectrum: Selective $G$-Bispectra Made Practical},
-  author  = {Mathe, Johan and {Myers Lantow}, Adele and Mataigne, Simon
-             and Miolane, Nina},
-  journal = {arXiv preprint arXiv:2605.07270},
-  year    = {2026}
+        <pre class="bibtex"><code>@inproceedings{mathe2026bispectrum,
+  title         = {bispectrum: Selective $G$-Bispectra Made Practical},
+  author        = {Mathe, Johan and {Myers Lantow}, Adele and Mataigne, Simon
+                   and Miolane, Nina},
+  booktitle     = {Advances in Neural Information Processing Systems},
+  volume        = {39},
+  year          = {2026},
+  eprint        = {2605.07270},
+  archivePrefix = {arXiv}
 }</code></pre>
         <ol class="refs">
           <li>
