@@ -53,6 +53,7 @@ export type ClassifyStep = 'spin' | 'power' | 'scramble' | 'six';
 
 /** In-plane half turn: the digits sit on the north pole, which faces the reader. */
 const HALF_TURN: Mat3 = Float64Array.of(-1, 0, 0, 0, -1, 0, 0, 0, 1);
+const TWO = 2;
 const SIX = 6;
 
 /**
@@ -334,7 +335,12 @@ export class ClassifyFigure {
   apply(step: ClassifyStep): void {
     switch (step) {
       case 'spin':
+        this.setScrambled(false);
+        this.setSpin(true);
+        break;
       case 'power':
+        // The 2 that the power-spectrum model takes for a 3, at every angle.
+        if (this.truth !== TWO || this.root.classList.contains('drawing')) this.choose(TWO);
         this.setScrambled(false);
         this.setSpin(true);
         break;

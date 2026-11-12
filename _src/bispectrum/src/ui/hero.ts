@@ -51,8 +51,8 @@ interface Rebuilt {
 }
 
 /**
- * The opening figure. The Earth turns; the numbers that describe it move, and two shorter
- * lists hold still. Each still list is put to the same test: redraw the globe from it.
+ * The opening figure. The Earth turns; its coefficients move, and two lists of invariant
+ * features don't. Each list is put to the same test: redraw the globe from it.
  */
 export class HeroFigure {
   private readonly lmax: number;
@@ -137,12 +137,17 @@ export class HeroFigure {
     });
     this.status = el('div', { class: 'hr-status', attrs: { 'aria-live': 'polite' } });
 
-    const lead = (count: number, what: string): HTMLElement =>
+    const lead = (count: number, noun: string, what: string): HTMLElement =>
       el(
         'div',
         { class: 'hr-lead' },
-        el('span', { class: 'hr-count', text: String(count) }),
-        el('span', { class: 'hr-what', text: what }),
+        el(
+          'div',
+          { class: 'hr-head' },
+          el('span', { class: 'hr-count', text: String(count) }),
+          el('span', { class: 'hr-noun', text: noun }),
+        ),
+        el('p', { class: 'hr-what', text: what }),
       );
     const redraw = (host: HTMLElement, title: string, ...controls: HTMLElement[]): HTMLElement =>
       el(
@@ -163,7 +168,7 @@ export class HeroFigure {
           el(
             'div',
             { class: 'rw-panel-head' },
-            el('h4', { text: 'Earth' }),
+            el('h4', { text: 'Earth, roughly' }),
             el('span', { class: 'rw-hint', text: 'drag to turn it' }),
           ),
           earthHost,
@@ -176,7 +181,7 @@ export class HeroFigure {
           el(
             'div',
             { class: 'hr-list' },
-            lead(n, 'numbers describe this globe. Turn it and they change.'),
+            lead(n, 'coefficients', 'The globe in spherical harmonics. Turn it and they change.'),
             this.cells.all.element,
           ),
         ),
@@ -191,13 +196,14 @@ export class HeroFigure {
               {},
               lead(
                 this.lmax + 1,
-                'numbers that hold still: how much detail the globe has at each scale, coarse to fine.',
+                'features',
+                'The power spectrum, invariant to rotation: how much detail the globe has at each scale.',
               ),
               this.cells.power.element,
             ),
             redraw(
               mushHost,
-              `a globe with the same ${this.lmax + 1}`,
+              'reconstruction attempt from the power spectrum',
               button('another', () => this.scramble(), { kind: 'quiet' }),
             ),
           ),
@@ -209,14 +215,15 @@ export class HeroFigure {
               {},
               lead(
                 this.invariant.n,
-                `numbers that hold still too: sums of products of three or four of the ${n}.`,
+                'features',
+                `A selective bispectrum, also invariant: sums of products of three or four of the ${n} coefficients.`,
               ),
               this.cells.descriptor.element,
               this.status,
             ),
             redraw(
               redrawnHost,
-              `rebuilt from the ${this.invariant.n}`,
+              'reconstruction from the bispectrum',
               this.lineButton,
               this.againButton,
             ),
@@ -284,7 +291,7 @@ export class HeroFigure {
     this.lineButton.textContent = 'line it up';
     this.lineButton.disabled = this.againButton.disabled = true;
     this.redrawn.setSignal(null, this.vmax);
-    this.status.textContent = `Rebuilding the globe from the ${this.invariant.n} numbers…`;
+    this.status.textContent = `Reconstructing the globe from the ${this.invariant.n} features…`;
     await this.solver.solve(
       {
         lmax: this.lmax,
@@ -318,7 +325,9 @@ export class HeroFigure {
         this.rebuilt = { x: b.x, toEarth: b.rot, rel: b.alignedRel, seconds: e.ms / 1000 };
         this.redrawn.setSignal(b.x, this.vmax);
         this.lineButton.disabled = false;
-        this.renderStatus();
+        // The first reconstruction, on page load, lines itself up; "again" leaves it in its own pose.
+        if (run === 1) this.setLined(true);
+        else this.renderStatus();
         return;
       }
       case 'error':
@@ -332,8 +341,8 @@ export class HeroFigure {
     if (!r) return;
     const digits = Math.max(1, Math.min(15, Math.floor(-Math.log10(Math.max(r.rel, 1e-16)))));
     this.status.textContent = this.lined
-      ? `Lined up, it matches the Earth to ${digits} digits.`
-      : `Rebuilt in ${r.seconds.toFixed(1)} s from these numbers alone. It is the Earth, in a pose of its own.`;
+      ? `Lined up, it matches the rough Earth to ${digits} digits.`
+      : `Reconstructed in ${r.seconds.toFixed(1)} s from these features alone: the same globe, in a pose of its own.`;
   }
 
   /** Recomputes the three lists from the turned globe: only the first one moves. */
@@ -366,6 +375,9 @@ export class HeroFigure {
       // Through a quaternion, so that thousands of products stay a rotation.
       this.rot = quatToMat(matToQuat(mul3(this.rot, step)));
       this.dirty = true;
+      // Not lined up, the rebuilt globe turns too, about the vertical axis of the view.
+      if (!this.lined)
+        this.own = quatToMat(matToQuat(mul3(expMap([0, SPIN_SPEED * dt, 0]), this.own)));
     }
     if (this.dirty) this.refresh();
     this.dirty = false;

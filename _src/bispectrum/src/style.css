@@ -1171,11 +1171,19 @@ footer {
 
 /* ------------------------------------------------------------------ bridge */
 
+.br-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 14px;
+  align-items: start;
+  margin-top: 10px;
+}
+
 .br-view,
 .br-sphere {
   display: block;
   width: 100%;
-  max-width: 240px;
+  max-width: 160px;
   aspect-ratio: 1;
   margin: 0 auto;
 }
@@ -1196,7 +1204,7 @@ footer {
 .br-matrix {
   display: block;
   width: 100%;
-  max-width: 240px;
+  max-width: 180px;
   aspect-ratio: 1;
   margin: 0 auto;
 }
@@ -1479,6 +1487,7 @@ table.bench thead th {
 table.bench thead th.group {
   border-bottom-color: var(--stone);
   text-align: right;
+  white-space: nowrap;
 }
 
 table.bench tbody th {
@@ -1491,7 +1500,7 @@ table.bench td:nth-child(2) {
 
 table.bench .num {
   padding-right: 0;
-  padding-left: 14px;
+  padding-left: 12px;
   font-family: var(--mono);
   font-size: 13px;
   text-align: right;
@@ -1500,6 +1509,15 @@ table.bench .num {
 
 table.bench td.ours {
   color: var(--orange-text);
+}
+
+table.bench .start {
+  padding-left: 12px;
+  border-left: 1px solid var(--rule);
+}
+
+table.bench thead th.group.start {
+  padding-right: 0;
 }
 
 /* Hero: three lists of numbers beside the turning Earth. */
@@ -1532,10 +1550,13 @@ table.bench td.ours {
 }
 
 .hr-lead {
+  margin-bottom: 10px;
+}
+
+.hr-head {
   display: flex;
-  gap: 10px;
+  gap: 8px;
   align-items: baseline;
-  margin-bottom: 8px;
 }
 
 .hr-count {
@@ -1545,14 +1566,21 @@ table.bench td.ours {
   line-height: 1;
 }
 
-.hr-row.ours .hr-count {
+.hr-noun {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.hr-row.ours .hr-count,
+.hr-row.ours .hr-noun {
   color: var(--orange-text);
 }
 
 .hr-what {
-  font-size: 14px;
-  line-height: 1.35;
-  color: var(--muted);
+  margin: 6px 0 0;
+  font-size: 15px;
+  line-height: 1.45;
+  color: var(--ink);
 }
 
 .hr-cells {
@@ -1614,8 +1642,9 @@ table.bench td.ours {
     font-size: 22px;
   }
 
+  .hr-noun,
   .hr-what {
-    font-size: 13px;
+    font-size: 14px;
   }
 
   .cf-body {

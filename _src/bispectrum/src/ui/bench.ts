@@ -30,7 +30,10 @@ export interface Bench {
 export const ms = (v: number | null): string => (v === null ? '–' : v.toFixed(2));
 const count = (n: number | null): string => (n === null ? '–' : n.toLocaleString('en-US'));
 
-/** The library's timing table, one row per benchmarked module. */
+/**
+ * The library's timing table, one row per benchmarked module. Full before selective, and the full
+ * bispectrum's time beside the selective training time, the mode it was measured in.
+ */
 export function benchTable(bench: Bench): HTMLElement {
   const head = (text: string, attrs: Record<string, string> = {}): HTMLElement =>
     el('th', { text, attrs: { scope: 'col', ...attrs } });
@@ -47,17 +50,18 @@ export function benchTable(bench: Bench): HTMLElement {
         {},
         head('Module', { rowspan: '2' }),
         head('Benchmarked on', { rowspan: '2' }),
-        head('Numbers out', { colspan: '2', class: 'group' }),
-        head('Forward pass, ms', { colspan: '3', class: 'group' }),
+        head('Output size', { colspan: '2', class: 'group start' }),
+        head('Training, ms', { colspan: '2', class: 'group start' }),
+        head('Inference, ms', { colspan: '1', class: 'group start' }),
       ),
       el(
         'tr',
         {},
+        head('full', { class: 'num start' }),
         head('selective', { class: 'num' }),
-        head('full', { class: 'num' }),
-        head('training', { class: 'num' }),
-        head('inference', { class: 'num' }),
-        head('full', { class: 'num' }),
+        head('full', { class: 'num start' }),
+        head('selective', { class: 'num' }),
+        head('selective', { class: 'num start' }),
       ),
     ),
     el(
@@ -69,11 +73,11 @@ export function benchTable(bench: Bench): HTMLElement {
           {},
           el('th', { attrs: { scope: 'row' } }, el('code', { text: r.module })),
           el('td', { text: r.setting }),
+          num(count(r.full), 'start'),
           num(count(r.selective), 'ours'),
-          num(count(r.full)),
+          num(ms(r.full_ms), 'start'),
           num(ms(r.train_ms), 'ours'),
-          num(ms(r.inference_ms), 'ours'),
-          num(ms(r.full_ms)),
+          num(ms(r.inference_ms), 'ours start'),
         ),
       ),
     ),

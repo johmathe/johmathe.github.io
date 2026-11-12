@@ -109,23 +109,36 @@ class BridgeFigure implements Figure {
       button('spin once', () => this.spin()),
     );
 
-    const ringPanel = el('div', { class: 'rw-panel' }, head('Ring', 'frequency k is one wave'));
-    this.ring = new Surface(ringPanel, 'br-view', () => this.drawRing());
-    ringPanel.append(el('h5', { class: 'br-label', text: 'Its numbers' }));
-    this.ringCells = new Surface(ringPanel, 'br-cells', () => this.drawRingCells());
-    ringPanel.append(el('h5', { class: 'br-label', text: 'Turn, as a matrix on them' }));
-    this.ringMatrix = new Surface(ringPanel, 'br-matrix', () =>
+    // Each panel: the signal and its coefficients on the left, the rotation as a matrix on them on the right.
+    const columns = (): [HTMLElement, HTMLElement, HTMLElement] => {
+      const [left, right] = [el('div', {}), el('div', {})];
+      return [el('div', { class: 'br-body' }, left, right), left, right];
+    };
+    const [ringBody, ringLeft, ringRight] = columns();
+    const ringPanel = el(
+      'div',
+      { class: 'rw-panel' },
+      head('Ring', 'frequency k is one wave'),
+      ringBody,
+    );
+    this.ring = new Surface(ringLeft, 'br-view', () => this.drawRing());
+    ringLeft.append(el('h5', { class: 'br-label', text: 'Fourier coefficients' }));
+    this.ringCells = new Surface(ringLeft, 'br-cells', () => this.drawRingCells());
+    ringRight.append(el('h5', { class: 'br-label', text: 'Rotation matrix' }));
+    this.ringMatrix = new Surface(ringRight, 'br-matrix', () =>
       drawBlockMatrix(this.ringMatrix, ringBlocks(this.alpha), { bold: this.k }),
     );
-    ringPanel.append(el('p', { class: 'br-sizes', text: 'blocks: 1, 2, 2, 2, 2' }));
+    ringRight.append(el('p', { class: 'br-sizes', text: 'a block per frequency' }));
 
+    const [sphereBody, sphereLeft, sphereRight] = columns();
     const spherePanel = el(
       'div',
       { class: 'rw-panel' },
       head('Sphere', 'drag to turn it any way'),
+      sphereBody,
     );
     const wrap = el('div', { class: 'br-sphere' });
-    spherePanel.append(wrap);
+    sphereLeft.append(wrap);
     this.sphere = new SphereView(wrap, {
       grid: this.grid,
       onDrag: (w) => {
@@ -134,13 +147,13 @@ class BridgeFigure implements Figure {
         this.update();
       },
     });
-    spherePanel.append(el('h5', { class: 'br-label', text: 'Its numbers' }));
-    this.sphereCells = new Surface(spherePanel, 'br-cells', () => this.drawSphereCells());
-    spherePanel.append(el('h5', { class: 'br-label', text: 'Turn, as a matrix on them' }));
-    this.sphereMatrix = new Surface(spherePanel, 'br-matrix', () =>
+    sphereLeft.append(el('h5', { class: 'br-label', text: 'Fourier coefficients' }));
+    this.sphereCells = new Surface(sphereLeft, 'br-cells', () => this.drawSphereCells());
+    sphereRight.append(el('h5', { class: 'br-label', text: 'Rotation matrix' }));
+    this.sphereMatrix = new Surface(sphereRight, 'br-matrix', () =>
       drawBlockMatrix(this.sphereMatrix, dofBlocks(this.rotation, L), { bold: this.k }),
     );
-    spherePanel.append(el('p', { class: 'br-sizes', text: 'blocks: 1, 3, 5, 7, 9' }));
+    sphereRight.append(el('p', { class: 'br-sizes', text: 'a block per degree' }));
 
     this.readout = el('p', { class: 'rg-readout' });
     root.append(controls, el('div', { class: 'rw-stage' }, ringPanel, spherePanel), this.readout);
@@ -217,9 +230,9 @@ class BridgeFigure implements Figure {
     const k = this.k;
     this.readout.textContent =
       this.axis === 'pole' && isPole(this.dragged)
-        ? `About the pole the sphere turns like the ring. Inside each block, its numbers only ` +
+        ? `About the pole the sphere turns like the ring. Inside each block, its coefficients only ` +
           `rotate in pairs, by m times the angle. The wave that wraps ${k} times sits in block ${k}.`
-        : `About any other axis the ${2 * k + 1} numbers of degree ${k} mix with each other and ` +
+        : `About any other axis the ${2 * k + 1} coefficients of degree ${k} mix with each other and ` +
           `the whole block fills in. Nothing ever leaks into another block.`;
   }
 

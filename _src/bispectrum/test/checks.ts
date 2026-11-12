@@ -12,7 +12,7 @@ import { fullCount } from '../src/math/ring';
 import type { EarthManifest } from '../src/signals';
 import { ms, type Bench } from '../src/ui/bench';
 import { BYTES_PER_NUMBER, type Counts, type SphereCounts } from '../src/ui/wall';
-import { loadDataJson } from './helpers';
+import { fixture, loadDataJson } from './helpers';
 
 export const int = (n: number): string => n.toLocaleString('en-US');
 export const pct = (v: number, digits = 1): string => `${(100 * v).toFixed(digits)}%`;
@@ -70,6 +70,16 @@ const entries = (L: number, kind?: 'triples' | 'energies'): string =>
     ).length,
   );
 
+/** The power-spectrum model's answer on the widget's 2: its digit and its probability. */
+function powerOnTwo(): { digit: number; p: number } {
+  const fx = fixture<{ labels: number[]; power_logits: number[] }>('classifier.json');
+  const i = fx.labels.indexOf(2);
+  const z = fx.power_logits.slice(10 * i, 10 * i + 10);
+  const e = z.map((v) => Math.exp(v - Math.max(...z)));
+  const digit = e.indexOf(Math.max(...e));
+  return { digit, p: e[digit]! / e.reduce((a, b) => a + b, 0) };
+}
+
 export const CHECKS: Record<string, () => string> = {
   'page.L': () => String(PAGE_L),
   'fp.n': () => entries(PAGE_L),
@@ -118,6 +128,8 @@ export const CHECKS: Record<string, () => string> = {
   'mlp.errors': () => int(errors(classifier().confusion.mlp.test_nr)),
   'mlp.sixnine': () => int(mixed(classifier().confusion.mlp.test_nr, 6, 9)),
   'power.sixnine': () => int(mixed(classifier().confusion.power.test_nr, 6, 9)),
+  'two.power': () => String(powerOnTwo().digit),
+  'two.powerP': () => pct(powerOnTwo().p, 0),
   'test.n': () =>
     int(
       classifier()

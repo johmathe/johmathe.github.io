@@ -73,13 +73,13 @@
           coefficients, with completeness guarantees for several symmetry groups.
         </p>
         <p>
-          Consider the Earth's land mask, represented using spherical harmonics up to degree
-          <span data-check="hero.L">20</span>, with
-          <span data-check="hero.coeffs">441</span> coefficients. Rotate the globe and the
-          coefficients generally change, but its power spectrum, just
-          <span data-check="hero.power">21</span> numbers, remains the same. Unfortunately, plenty
-          of other signals have exactly the same power spectrum. The globe at the top right is one
-          of them.
+          Consider the Earth, roughly: its land mask in spherical harmonics up to degree
+          <span data-check="hero.L">20</span>, which is
+          <span data-check="hero.coeffs">441</span> coefficients and enough to make out the
+          continents if you squint. Rotate the globe and the coefficients generally change, but its
+          power spectrum, just <span data-check="hero.power">21</span> numbers, remains the same.
+          Unfortunately, plenty of other signals have exactly the same power spectrum. The globe at
+          the top right is one of them.
         </p>
         <p>
           Now consider the <span data-check="hero.fp">638</span> features in the lower panel, sums
@@ -89,18 +89,19 @@
         </p>
       </section>
       <figure class="l-body widget-figure">
-        <div data-figure="hero" data-loading="Loading the Earth…"></div>
+        <div data-figure="hero" data-loading="Loading the Earth, roughly…"></div>
         <figcaption>
           Left: the land mask (orange is land) and its
           <span data-check="hero.coeffs">441</span> coefficients. Top right: the power spectrum,
-          one energy per degree, and a globe with the same
-          <span data-check="hero.power">21</span> numbers, which “another” redraws. Bottom right:
-          the <span data-check="hero.fp">638</span> features (<span data-check="hero.triples"
+          one energy per degree, and a reconstruction attempt from it: a random globe with the same
+          <span data-check="hero.power">21</span> numbers, which “another” redraws. Each one fits
+          the power spectrum exactly, so nothing can tell them apart. Bottom right: the
+          <span data-check="hero.fp">638</span> features (<span data-check="hero.triples"
             >532</span
           >
           triple products and <span data-check="hero.energies">106</span> product energies) and the
-          globe the optimizer rebuilt from them. “Line it up” rotates it onto the Earth, and
-          “again” reruns the optimizer from new random starts.
+          globe the optimizer reconstructed from them. “Line it up” rotates it onto the original,
+          and “again” reruns the optimizer from new random starts.
         </figcaption>
       </figure>
       <section class="l-body">
@@ -1031,10 +1032,12 @@ _scatter_add_complex(result, entry, prods)</code></pre>
         <figcaption>
           Forward pass of <code>bispectrum</code> <span data-check="bench.version">0.5.0</span> on
           one NVIDIA H100, batch 16, median wall-clock in milliseconds. “Training” runs with
-          autograd on, “inference” replays the CUDA graph, “full” is the full bispectrum where the
-          library implements it. We reran the paper's benchmark on this release. The paper's own
-          table is for 0.4.1, before the replay reached every module. The benchmark does not time
-          the full bispectrum on the sphere, which takes 53.6 ms in the paper's table.
+          autograd on, for the full bispectrum where the library implements it and for the
+          selective one. “Inference” replays the CUDA graph and is timed for the selective modules
+          only. “Output size” counts the numbers each module returns per signal. We reran the
+          paper's benchmark on this release. The paper's own table is for 0.4.1, before the replay
+          reached every module. The benchmark does not time the full bispectrum on the sphere,
+          which takes 53.6 ms in the paper's table.
         </figcaption>
       </figure>
       <section class="l-body">
@@ -1075,7 +1078,12 @@ _scatter_add_complex(result, entry, prods)</code></pre>
             <li>
               <button type="button" class="step" data-step="power">Power spectrum.</button>
               The third model reads <span data-check="power.n">13</span> numbers that are just as
-              invariant, and is right <span data-check="power.nr">77.6%</span> of the time.
+              invariant, and is right <span data-check="power.nr">77.6%</span> of the time. This 2
+              is one of its misses: it takes it for a <span data-check="two.power">3</span> (<span
+                data-check="two.powerP"
+                >70%</span
+              >) at every angle, since its <span data-check="power.n">13</span> numbers don't move
+              as the digit turns. The bispectrum model gets it right.
             </li>
             <li>
               <button type="button" class="step" data-step="scramble">Scramble.</button>
@@ -1128,7 +1136,7 @@ _scatter_add_complex(result, entry, prods)</code></pre>
         </aside>
         <details class="foldout">
           <summary>
-            <span class="foldout-kicker">Fold-out · skippable</span>When not to use it
+            <span class="foldout-kicker">Fold-out · skippable</span>When not to use the bispectrum
           </summary>
           <p>
             <strong>When the pose is the label.</strong> As step 4 of the classifier figure shows,

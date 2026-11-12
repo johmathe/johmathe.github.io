@@ -79,6 +79,12 @@ describe('classifiers', () => {
     }
   });
 
+  it('get the widget 2 right with the bispectrum and wrong with the power spectrum', () => {
+    const i = fx.labels.indexOf(2);
+    expect(argmax(fx.mlp_logits.slice(10 * i, 10 * i + 10))).toBe(2);
+    expect(argmax(fx.power_logits.slice(10 * i, 10 * i + 10))).not.toBe(2);
+  });
+
   it('the bispectrum head ignores rotations, the pixel CNN does not', () => {
     const rng = new Rng(11);
     let moved = 0;
