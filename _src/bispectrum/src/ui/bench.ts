@@ -38,7 +38,10 @@ export function benchTable(bench: Bench): HTMLElement {
   const head = (text: string, attrs: Record<string, string> = {}): HTMLElement =>
     el('th', { text, attrs: { scope: 'col', ...attrs } });
   const num = (text: string, cls = ''): HTMLElement =>
-    el('td', { class: `num ${cls}`.trim(), text });
+    el('td', {
+      class: `num ${cls} ${text === '–' ? 'none' : ''}`.replace(/\s+/g, ' ').trim(),
+      text,
+    });
   return el(
     'table',
     { class: 'bench' },

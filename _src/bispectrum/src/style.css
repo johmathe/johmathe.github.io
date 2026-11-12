@@ -1472,52 +1472,99 @@ table.bench {
 
 table.bench th,
 table.bench td {
-  padding: 6px 10px 6px 0;
+  padding: 8px 14px 8px 0;
   border-bottom: 1px solid var(--rule);
   text-align: left;
   vertical-align: baseline;
 }
 
 table.bench thead th {
+  padding-top: 0;
+  border-bottom-color: var(--stone);
   font-size: 12px;
   font-weight: 600;
   color: var(--muted);
+  vertical-align: bottom;
+  white-space: nowrap;
 }
 
+/* A short rule under each group title, stopping short of the gutter before it. */
 table.bench thead th.group {
+  padding: 0 0 5px var(--gutter);
+  border-bottom: 0;
+  background: linear-gradient(var(--stone), var(--stone)) no-repeat right bottom /
+    calc(100% - var(--gutter)) 1px;
+  color: var(--ink);
+  text-align: center;
+}
+
+table.bench {
+  --gutter: 24px;
+}
+
+table.bench tbody tr:last-child > * {
   border-bottom-color: var(--stone);
-  text-align: right;
-  white-space: nowrap;
 }
 
 table.bench tbody th {
   font-weight: 400;
+  white-space: nowrap;
 }
 
 table.bench td:nth-child(2) {
   color: var(--muted);
+  white-space: nowrap;
 }
 
 table.bench .num {
   padding-right: 0;
-  padding-left: 12px;
-  font-family: var(--mono);
-  font-size: 13px;
+  padding-left: 14px;
   text-align: right;
   white-space: nowrap;
+}
+
+table.bench td.num {
+  font-family: var(--mono);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
 }
 
 table.bench td.ours {
   color: var(--orange-text);
 }
 
-table.bench .start {
-  padding-left: 12px;
-  border-left: 1px solid var(--rule);
+table.bench td.none {
+  color: var(--stone);
 }
 
-table.bench thead th.group.start {
-  padding-right: 0;
+table.bench .num.start {
+  padding-left: var(--gutter);
+}
+
+/* On a phone the numbers scroll sideways under the module names. */
+@media (max-width: 720px) {
+  table.bench {
+    --gutter: 18px;
+  }
+
+  table.bench thead tr:first-child > :first-child,
+  table.bench tbody th {
+    position: sticky;
+    left: 0;
+    z-index: 1;
+    background: var(--beige);
+    box-shadow: inset -1px 0 var(--rule);
+  }
+
+  table.bench td:nth-child(2) {
+    min-width: 9em;
+    white-space: normal;
+  }
+
+  table.bench td:nth-child(2),
+  table.bench thead tr:first-child > :nth-child(2) {
+    padding-left: 10px;
+  }
 }
 
 /* Hero: three lists of numbers beside the turning Earth. */
