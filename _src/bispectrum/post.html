@@ -48,40 +48,16 @@
           <a href="https://arxiv.org/abs/2605.07270">Paper</a> ·
           <a href="https://github.com/geometric-intelligence/bispectrum">Code</a>
         </p>
-        <div class="logos" role="img" aria-label="UC Santa Barbara, Atmo and UCLouvain">
-          <span data-logo="ucsb"></span><span data-logo="atmo"></span
-          ><span data-logo="uclouvain"></span>
-        </div>
       </div>
     </header>
 
     <main>
-      <section class="l-body" id="hook">
-        <p>
-          Turn a digit on a sphere, and a network trained on upright digits will often read another
-          digit. The usual fixes either train on many turned copies or throw information away. The
-          bispectrum is a third way. Its features don't change when the input is rotated, shifted
-          or flipped, and for generic signals they determine the input up to that transformation.
-          That second property, completeness, is what we mean by lossless. It is proven for finite
-          groups and for images on a disk, and on the sphere it is a conjecture that every signal
-          we tested supports.
-        </p>
-        <p>
-          <code>bispectrum</code> is a PyTorch library that computes these invariants in seven
-          modules, from cyclic shifts of a ring to rotations of the sphere, in a fraction of a
-          millisecond per batch on a GPU. These notes follow our NeurIPS 2026 talk in five parts.
-          The figures run live in your browser, and the numbered steps in their captions replay the
-          talk's demos.
-        </p>
-      </section>
-
       <nav class="l-body toc" aria-label="Contents">
         <span class="toc-kicker">Contents</span>
         <ol>
           <li>
             <a href="#hard">Why invariance is hard</a>
             <ol>
-              <li><a href="#pose">A digit on its side</a></li>
               <li><a href="#fixes">Two standard fixes</a></li>
               <li><a href="#power">The power spectrum</a></li>
             </ol>
@@ -129,12 +105,11 @@
         <h2>Why invariance is hard</h2>
       </section>
       <section class="l-body" id="pose">
-        <h3>A digit on its side</h3>
         <p>
           Take a 2 from MNIST, drawn on a sphere, and a small CNN that reads the sphere as an
           image. The CNN was trained on upright digits only, and on this upright 2 it is right.
-          Turn the digit on its side and it reads an 8. Let the digit spin and the answer changes
-          with the pose.
+          Turn the digit on its side and it reads an 8. In the figure below the digit keeps
+          spinning, and the answer changes with the pose.
         </p>
         <p>
           The CNN is not a bad model. On upright test digits it is right
@@ -145,23 +120,14 @@
         </p>
       </section>
       <figure class="l-body widget-figure cf-show-cnn">
-        <div data-figure="classify" data-start="two" data-loading="Loading the classifiers…"></div>
+        <div
+          data-figure="classify"
+          data-start="power"
+          data-loading="Loading the classifiers…"
+        ></div>
         <figcaption>
-          <ol class="steps">
-            <li>
-              <button type="button" class="step" data-step="two">Upright.</button> The 2 as the CNN
-              saw digits in training. It reads a 2.
-            </li>
-            <li>
-              <button type="button" class="step" data-step="side">On its side.</button> A quarter
-              turn about the pole, and the CNN reads an 8.
-            </li>
-            <li>
-              <button type="button" class="step" data-step="spin">Spin it.</button> The digit turns
-              through pose after pose, and the CNN's answer turns with it. Drag the sphere to turn
-              it yourself.
-            </li>
-          </ol>
+          The 2 turns through pose after pose, and the CNN's answer turns with it. Drag the sphere
+          to turn it yourself, or pick another digit.
         </figcaption>
       </figure>
 
@@ -180,7 +146,7 @@
           can pool to the same value.
         </p>
       </section>
-      <figure class="l-wide art-figure">
+      <figure class="l-body art-figure">
         <ul class="cards">
           <li class="card">
             <h4>Data augmentation</h4>
@@ -230,21 +196,13 @@
       <figure class="l-body widget-figure cf-show-two">
         <div
           data-figure="classify"
-          data-start="sideways"
+          data-start="power"
           data-loading="Loading the classifiers…"
         ></div>
         <figcaption>
-          <ol class="steps">
-            <li>
-              <button type="button" class="step" data-step="sideways">On its side.</button> The CNN
-              reads an 8, and the power-spectrum model a <span data-check="two.power">3</span>.
-            </li>
-            <li>
-              <button type="button" class="step" data-step="power">Spin it.</button> The
-              <span data-check="power.n">13</span> cells of the power spectrum stay still, and so
-              does its answer, while the CNN's keeps changing.
-            </li>
-          </ol>
+          The same spinning 2. The <span data-check="power.n">13</span> cells of the power spectrum
+          stay still, and so does its answer, a <span data-check="two.power">3</span>, while the
+          CNN's keeps changing.
         </figcaption>
       </figure>
 
@@ -269,7 +227,7 @@
           <dfn>invariant descriptor</dfn>.
         </p>
       </section>
-      <figure class="l-wide art-figure">
+      <figure class="l-body art-figure">
         <div class="orbits">
           <div data-art="orbit-x"></div>
           <p><b>Invariant.</b> Every pose of the 2 maps to the same features.</p>
@@ -363,7 +321,7 @@
               The 9 outlined entries, one per step. \(\beta_{0,0}\) gives \(c_0\), \(\beta_{0,1}\)
               gives \(|c_1|\), and each \(\beta_{1,k}\) gives \(c_{k+1}\). The recovered phases are
               the orange marks on the \(\varphi_k\) row, and the curve they give is drawn in
-              orange. Part 3 explains <a href="#chain">the chain</a>.
+              orange. <a href="#chain">A chain on the ring</a>, further down, explains it.
             </li>
             <li>
               <button type="button" class="step" data-step="free">Move the free phase.</button>
@@ -417,7 +375,7 @@
           and Clebsch–Gordan tables, gives the bispectrum of every group in the library.
         </p>
       </section>
-      <figure class="l-wide art-figure">
+      <figure class="l-body art-figure">
         <ul class="gts">
           <li class="gt">
             <span data-icon="ring"></span>
@@ -600,7 +558,8 @@
           not the group itself, so its Fourier coefficients are the vectors \(\mathbf F_\ell\)
           rather than square matrices, and a theorem that needs nonsingular matrices doesn't apply
           (Kondor, 2007). On the sphere, generic just means outside a set of measure zero, and
-          <a href="#completeness">part 3</a> says what we know about completeness there.
+          <a href="#completeness">Testing completeness</a>, further down, says what we know about
+          completeness there.
         </p>
       </section>
       <figure class="l-body widget-figure">
@@ -689,7 +648,7 @@
           Now let's give the sphere's bispectrum to the same kind of small MLP, trained, like the
           others, on upright digits only. Its descriptor is
           <span data-check="fp.n">254</span> invariants of the digit at \(L = 12\), mostly triple
-          products, picked as <a href="#sphere-selective">part 3</a> explains. On its side the 2 is
+          products, picked as <a href="#sphere-selective">explained below</a>. On its side the 2 is
           read as a 2, and as it spins it stays one. Across the test set this model is right on
           <span data-check="mlp.nr">95.7%</span> of upright digits and
           <span data-check="mlp.r">95.7%</span> of rotated ones.
@@ -698,29 +657,14 @@
       <figure class="l-body widget-figure">
         <div
           data-figure="classify"
-          data-start="sideways"
+          data-start="power"
           data-loading="Loading the classifiers…"
         ></div>
         <figcaption>
-          <ol class="steps">
-            <li>
-              <button type="button" class="step" data-step="sideways">On its side.</button> The
-              bispectrum model reads a 2. The CNN still reads an 8, and the power-spectrum model a
-              <span data-check="two.power">3</span>.
-            </li>
-            <li>
-              <button type="button" class="step" data-step="spin">Spin it.</button> The
-              descriptor's <span data-check="fp.n">254</span> cells don't change, and neither do
-              the bars beside them.
-            </li>
-            <li>
-              <button type="button" class="step" data-step="scramble">Scramble.</button> Same power
-              spectrum, each degree rotated on its own, and the digit is gone. The power-spectrum
-              model can't tell, since its <span data-check="power.n">13</span> numbers haven't
-              changed. The bispectrum model's descriptor moves, so its input tells the scramble
-              from the digit, although its MLP, trained on digits only, still has to name one.
-            </li>
-          </ol>
+          All three models on the spinning 2. The descriptor's
+          <span data-check="fp.n">254</span> cells don't change, and neither does the bispectrum
+          model's answer, a 2. The CNN's answer keeps changing, and the power-spectrum model stays
+          on a <span data-check="two.power">3</span>.
         </figcaption>
       </figure>
 
@@ -763,7 +707,7 @@
       <section class="l-body">
         <p>
           One rebuilt globe is evidence, not a proof. Which invariants to keep, and what is proven
-          about them, are the subject of part 3.
+          about them, are the subject of the next part.
         </p>
       </section>
 
@@ -808,7 +752,7 @@
           the signal rather than quadratically. For the 256 × 256 image that is
           <span data-check="wall.pixels">65,536</span> numbers, one per pixel. Mataigne et al.
           (2024) select \(O(|G|)\) entries on any finite group by a search over its table of tensor
-          products, like the one for \(D_5\) in the <a href="#d5-table">fold-out</a> of part 2, and
+          products, like the one for \(D_5\) in the <a href="#d5-table">fold-out</a> above, and
           prove the selection complete for commutative groups, the dihedral groups and the
           rotations of a cube, with or without reflections. For the 24 rotations of a cube it keeps
           172 of the 576 scalars.
@@ -865,8 +809,8 @@
           F_{\ell_1} \otimes \mathbf F_{\ell_2})|_\ell\|^2\), the squared norms of Clebsch–Gordan
           projections. They are chosen so that the system has full rank, and the total is
           \(\Theta(L^2)\). The energies are not entries of the bispectrum, so the paper calls the
-          whole descriptor the augmented selective spherical bispectrum. The Earth of part 2 came
-          back from <span data-check="hero.fp">638</span> of these numbers.
+          whole descriptor the augmented selective spherical bispectrum. The Earth above came back
+          from <span data-check="hero.fp">638</span> of these numbers.
         </p>
       </section>
 
@@ -1026,7 +970,7 @@
           features and through its inverse.
         </p>
       </section>
-      <figure class="l-wide art-figure">
+      <figure class="l-body art-figure">
         <ul class="cards three">
           <li class="card">
             <h4>Pooling</h4>
@@ -1070,8 +1014,8 @@
         </p>
         <p>
           <strong>Invariant features.</strong> With no weights to learn, the bispectrum can also be
-          the whole feature extractor, straight into an MLP. That is the Spherical MNIST model of
-          part 4.
+          the whole feature extractor, straight into an MLP. That is the
+          <a href="#spherical-mnist">Spherical MNIST</a> model above.
         </p>
         <p>
           <strong>Inversion.</strong> Six of the seven modules map their selective bispectrum back
@@ -1085,13 +1029,14 @@
       <section class="l-body" id="modules">
         <h3>The library</h3>
         <p>
-          <code>bispectrum</code> has one module for each tile of <a href="#groups">part 2</a>,
-          each a <code>torch.nn.Module</code> without parameters, named
-          <code>{Group}on{Domain}</code>. Calling it returns the selective bispectrum, and
-          <code>selective=False</code> returns the full one, except for <code>DnonDn</code>,
-          <code>SO2onDisk</code> and <code>OctaonOcta</code>, which only have the selective one.
-          For a 32 × 32 image the full one has hundreds of thousands of entries. In the benchmark
-          below, the selective one returns <span data-check="bench.selMin">76</span> to
+          <code>bispectrum</code> has one module for each of the
+          <a href="#groups">group tiles</a> above, each a <code>torch.nn.Module</code> without
+          parameters, named <code>{Group}on{Domain}</code>. Calling it returns the selective
+          bispectrum, and <code>selective=False</code> returns the full one, except for
+          <code>DnonDn</code>, <code>SO2onDisk</code> and <code>OctaonOcta</code>, which only have
+          the selective one. For a 32 × 32 image the full one has hundreds of thousands of entries.
+          In the benchmark below, the selective one returns
+          <span data-check="bench.selMin">76</span> to
           <span data-check="bench.selMax">1,024</span> numbers per signal. The modules are
           differentiable, so they can sit anywhere in a network. In a group-equivariant CNN, one
           goes where the max pooling was.

@@ -1,71 +1,12 @@
 /* The deck-based post: the article look of style.css, plus the deck's cards, tiles and results
-   table at page scale. The drawings themselves are styled by deck/art.css. */
+   table at text width. The drawings themselves are styled by deck/art.css. */
 @import '../deck/art.css';
-
-/* ------------------------------------------------------------------ masthead */
-
-.logos {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 14px 32px;
-  align-items: center;
-  margin-top: 22px;
-  color: var(--graphite);
-}
-
-.logos svg {
-  display: block;
-  width: auto;
-  height: 20px;
-}
-
-/* All capitals to the edges of its box, so it reads larger than the others at the same height. */
-.logos [data-logo='ucsb'] svg {
-  height: 14px;
-}
-
-.logos .lv-a {
-  fill: var(--ash);
-}
-
-.logos .lv-b {
-  fill: var(--stone);
-}
 
 /* ------------------------------------------------------------------ chapters */
 
-body {
-  counter-reset: chapter;
-}
-
-.chapter-head {
-  counter-increment: chapter;
-}
-
-.chapter-head h2::before {
-  content: counter(chapter);
-  display: block;
-  margin-bottom: 4px;
-  font-family: var(--mono);
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  color: var(--orange-text);
-}
-
-.toc > ol {
-  counter-reset: toc-chapter;
-}
-
-.toc > ol > li:not(:last-child) {
-  counter-increment: toc-chapter;
-}
-
-.toc > ol > li:not(:last-child) > a::before {
-  content: counter(toc-chapter) '\2002';
-  font-family: var(--mono);
-  font-size: 0.9em;
-  color: var(--ash);
+/* A chapter whose first subsection has no heading of its own. */
+.chapter-head + section > p:first-child {
+  margin-top: 14px;
 }
 
 /* ------------------------------------------------------------------ classifier */
@@ -78,33 +19,16 @@ body {
   display: none;
 }
 
+/* The digit spins from the start, so the turn, spin and scramble buttons have nothing to add. */
+.cf .rw-panel > .rw-row {
+  display: none;
+}
+
 /* ------------------------------------------------------------------ cards */
 
 .art-figure {
   margin-top: 36px;
   margin-bottom: 36px;
-}
-
-/* Wider than the text. Once the contents sit in the left margin, a wide figure keeps the text's
-   left edge and grows to the right only. */
-.l-wide {
-  max-width: 1000px;
-  margin-right: auto;
-  margin-left: auto;
-  padding: 0 20px;
-}
-
-@media (min-width: 1240px) {
-  .l-wide {
-    max-width: none;
-    width: calc(704px + min(260px, 50vw - 376px));
-    margin-left: calc(50% - 352px);
-  }
-
-  .l-wide figcaption {
-    max-width: 664px;
-    margin-left: 0;
-  }
 }
 
 .cards {
@@ -199,16 +123,22 @@ body {
 
 /* ------------------------------------------------------------------ group tiles */
 
+/* Four to a row, and the last row centred, so seven tiles read as 4 + 3. */
 .gts {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-  gap: 12px;
+  --per-row: 4;
+  --gap: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--gap);
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
 .gt {
+  flex: 0 0 calc((100% - (var(--per-row) - 1) * var(--gap)) / var(--per-row));
+  box-sizing: border-box;
   padding: 14px 8px 12px;
   border: 1px solid var(--rule);
   border-radius: 10px;
@@ -254,8 +184,8 @@ body {
 
 @media (max-width: 520px) {
   .gts {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 8px;
+    --per-row: 3;
+    --gap: 8px;
   }
 
   .gt {
