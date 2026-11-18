@@ -1,4 +1,5 @@
-import type { Figure, Mount } from './figure';
+import type { Figure } from './figure';
+import { FIGURES } from './figures';
 // The brand files live outside this package, so they go through the bundler instead of tags in
 // index.html (which the dev server cannot resolve).
 import faviconUrl from '../../assets/brand/bispectrum-favicon.svg';
@@ -29,18 +30,6 @@ void import('./mathtext').then(({ renderMath }) =>
   renderMath(document.body, (el) => el.closest('[data-figure]') !== null),
 );
 
-/** One entry per `[data-figure]` element; each figure is its own chunk, loaded near the viewport. */
-const FIGURES: Record<string, () => Promise<Mount>> = {
-  hero: () => import('./ui/hero').then((m) => m.mount),
-  ring: () => import('./ui/ring').then((m) => m.mount),
-  bridge: () => import('./ui/bridge').then((m) => m.mount),
-  wall: () => import('./ui/wall').then((m) => m.mount),
-  recon: () => import('./ui/widget').then((m) => m.mount),
-  bench: () => import('./ui/bench').then((m) => m.mount),
-  classify: () => import('./ui/classify').then((m) => m.mount),
-  playground: () => import('./ui/widget').then((m) => m.mountPlayground),
-};
-
 const mounted = new Map<HTMLElement, Promise<Figure | null>>();
 
 async function build(root: HTMLElement): Promise<Figure | null> {
@@ -61,10 +50,21 @@ async function build(root: HTMLElement): Promise<Figure | null> {
   }
 }
 
+/** Mounts `root` once, in the state of its `data-start` step if it has one. */
 function ensure(root: HTMLElement): Promise<Figure | null> {
   let p = mounted.get(root);
   if (!p) {
-    p = build(root);
+    const start = root.dataset.start;
+    p = build(root).then((fig) => {
+      if (fig && start) {
+        fig.apply?.(start);
+        for (const b of root.closest('figure')?.querySelectorAll<HTMLElement>('[data-step]') ??
+          []) {
+          b.classList.toggle('active', b.dataset.step === start);
+        }
+      }
+      return fig;
+    });
     mounted.set(root, p);
   }
   return p;

@@ -35,6 +35,11 @@ const GPUS = [
 
 type Tab = 'image' | 'sphere';
 
+const isTab = (t: string | undefined): t is Tab => t === 'image' || t === 'sphere';
+
+/** The tab each step of the talk deck shows. */
+const STEP_TAB: Partial<Record<string, Tab>> = { small: 'image', big: 'image', sphere: 'sphere' };
+
 const int = (n: number): string => Math.round(n).toLocaleString('en-US');
 
 export function bytes(b: number): string {
@@ -78,11 +83,19 @@ class WallFigure implements Figure {
   private readonly lSlider: Slider;
   private readonly legend: HTMLElement;
   private readonly readout: HTMLElement;
+  /** Set by `data-tab` on the host: the figure shows that tab only, and ignores the other's steps. */
+  private readonly pinned: Tab | null;
+  /** Set by `data-deck` on the host: the talk deck counts invariants, not numbers. */
+  private readonly unit: string;
 
   constructor(
     host: HTMLElement,
     private readonly counts: SphereCounts,
   ) {
+    const tab = host.dataset.tab;
+    this.pinned = isTab(tab) ? tab : null;
+    this.tab = this.pinned ?? this.tab;
+    this.unit = host.dataset.deck === undefined ? 'numbers' : 'invariants';
     const root = el('div', { class: 'rw wl' });
     this.tabs = segmented(
       'Signal',
@@ -137,6 +150,7 @@ class WallFigure implements Figure {
   }
 
   apply(step: string): void {
+    if (this.pinned && STEP_TAB[step] !== this.pinned) return;
     switch (step) {
       case 'small':
         this.setTab('image');
@@ -220,7 +234,7 @@ class WallFigure implements Figure {
       xLabel: 'band-limit L',
       yMax: 1e9,
       series: [
-        { label: 'full: numbers', color: INK, dash: [], width: 1.75, y: at('full') },
+        { label: `full: ${this.unit}`, color: INK, dash: [], width: 1.75, y: at('full') },
         {
           label: 'full: terms',
           color: INK,
@@ -229,7 +243,7 @@ class WallFigure implements Figure {
           y: at('full_terms'),
         },
         {
-          label: 'selective: numbers',
+          label: `selective: ${this.unit}`,
           color: ORANGE_TEXT,
           dash: [],
           width: 2.25,
@@ -283,7 +297,10 @@ class WallFigure implements Figure {
   private draw(): void {
     const { ctx, w, h } = this.chart;
     const m = this.model();
-    const pad = { l: 34, r: m.lines.length ? 78 : 14, t: 10, b: 34 };
+    // Text size from `--wl-text` on the chart (the talk deck sets it), margins in proportion.
+    const fs = parseFloat(getComputedStyle(this.chart.canvas).getPropertyValue('--wl-text')) || 11;
+    const k = fs / 11;
+    const pad = { l: 34 * k, r: (m.lines.length ? 78 : 14) * k, t: 10 * k, b: 34 * k };
     const [pw, ph] = [w - pad.l - pad.r, h - pad.t - pad.b];
     const [x0, x1] = [m.xs[0]!, m.xs.at(-1)!];
     const fx = (x: number): number =>
@@ -292,7 +309,7 @@ class WallFigure implements Figure {
     const top = Math.log10(m.yMax);
     const fy = (y: number): number => pad.t + ph * (1 - Math.log10(Math.max(y, 1)) / top);
 
-    ctx.font = '11px "IBM Plex Mono", ui-monospace, monospace';
+    ctx.font = `${fs}px "IBM Plex Mono", ui-monospace, monospace`;
     ctx.lineWidth = 1;
     ctx.textBaseline = 'middle';
     ctx.textAlign = 'right';
@@ -306,16 +323,18 @@ class WallFigure implements Figure {
       ctx.stroke();
       if (names[e]) {
         ctx.fillStyle = MUTED;
-        ctx.fillText(names[e]!, pad.l - 6, y);
+        ctx.fillText(names[e]!, pad.l - 6 * k, y);
       }
     }
     ctx.textAlign = 'center';
     ctx.textBaseline = 'top';
     ctx.fillStyle = MUTED;
-    for (const t of m.xTicks) ctx.fillText(String(t), fx(t), pad.t + ph + 6);
-    ctx.font = '11px "IBM Plex Sans", system-ui, sans-serif';
-    ctx.fillText(m.xLabel, pad.l + pw / 2, pad.t + ph + 20);
+    for (const t of m.xTicks) ctx.fillText(String(t), fx(t), pad.t + ph + 6 * k);
+    ctx.font = `${fs}px "IBM Plex Sans", system-ui, sans-serif`;
+    ctx.fillText(m.xLabel, pad.l + pw / 2, pad.t + ph + 20 * k);
 
+    // The top line is labelled above itself, the others below, so that close lines don't collide.
+    const highest = Math.max(...m.lines.map((l) => l.y));
     for (const line of m.lines) {
       const y = Math.round(fy(line.y)) + 0.5;
       ctx.strokeStyle = STONE;
@@ -326,9 +345,9 @@ class WallFigure implements Figure {
       ctx.stroke();
       ctx.setLineDash([]);
       ctx.textAlign = 'left';
-      ctx.textBaseline = 'middle';
+      ctx.textBaseline = line.y === highest ? 'bottom' : 'top';
       ctx.fillStyle = MUTED;
-      ctx.fillText(line.label, pad.l + pw + 6, y);
+      ctx.fillText(line.label, pad.l + pw + 6 * k, y + (line.y === highest ? -2 : 2));
     }
 
     const cur = this.tab === 'image' ? this.side : this.L;

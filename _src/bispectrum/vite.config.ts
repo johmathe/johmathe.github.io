@@ -1,3 +1,4 @@
+import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vitest/config';
 
 // Link previews (og:image) only work with absolute URLs, and the post does not know where it
@@ -19,7 +20,16 @@ export default defineConfig({
   server: { fs: { allow: ['..'] } },
   worker: { format: 'es' },
   // three.js is most of the bundle (~150 kB gzipped).
-  build: { target: 'es2022', chunkSizeWarningLimit: 800 },
+  build: {
+    target: 'es2022',
+    chunkSizeWarningLimit: 800,
+    rollupOptions: {
+      input: {
+        index: fileURLToPath(new URL('./index.html', import.meta.url)),
+        post: fileURLToPath(new URL('./post.html', import.meta.url)),
+      },
+    },
+  },
   test: {
     environment: 'node',
     include: ['test/**/*.test.ts'],

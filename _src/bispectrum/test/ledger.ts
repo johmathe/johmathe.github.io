@@ -1,12 +1,13 @@
 /**
- * The post's term ledger: which technical words may appear, and where.
+ * The posts' term ledger: which technical words may appear, and where.
  *
  * - `ASSUMED`: the stated reader knows them (an ML researcher at ease with linear algebra, Fourier
  *   transforms, groups and equivariant networks, but not with representation theory).
  * - `DEFINED`: defined at first use, in a `<dfn>` inside the section that owns the term, and
- *   never used before it.
- * - `PREVIEWED`: defined terms the introduction (the masthead through `#orbits`) may name before
- *   the section that develops them; after the introduction they follow the `DEFINED` rule.
+ *   never used before it. Each page in `PAGES` says which of its sections owns each term.
+ * - `PREVIEWED`: defined terms the introduction (everything before the page's `introEnd`
+ *   section) may name before the section that develops them; after the introduction they follow
+ *   the `DEFINED` rule.
  * - `NAMED_ONCE`: named, with a gloss, only in a fold-out, an aside, code or the references.
  * - `UNUSED`: not on the page at all, nor in any widget string.
  */
@@ -75,6 +76,44 @@ export const DEFINED: DefinedTerm[] = [
   { term: 'degree', part: 'sphere', pattern: words('degrees?') },
   { term: 'band-limit', part: 'sphere', pattern: words('band[- ]?limit(?:s|ed)?') },
   { term: 'selective', part: 'ring-finite', pattern: words('selective|selectivity') },
+];
+
+/** The sections of `post.html`, which follows the talk, that own the terms of `DEFINED`. */
+const POST_PARTS: Record<string, string> = {
+  'invariant descriptor': 'want',
+  pose: 'want',
+  orbit: 'want',
+  complete: 'want',
+  'power spectrum': 'power',
+  bispectrum: 'ring',
+  'irreducible representation': 'groups',
+  generic: 'groups',
+  'Clebsch-Gordan coefficient': 'groups',
+  'Wigner D-matrix': 'sphere',
+  'spherical harmonic': 'sphere',
+  degree: 'sphere',
+  'band-limit': 'sphere',
+  selective: 'chain',
+};
+
+export interface Page {
+  file: string;
+  /** `id` of the first section after the introduction. */
+  introEnd: string;
+  defined: DefinedTerm[];
+}
+
+export const PAGES: Page[] = [
+  { file: 'index.html', introEnd: 'ring', defined: DEFINED },
+  {
+    file: 'post.html',
+    introEnd: 'preserves',
+    defined: DEFINED.map((t) => {
+      const part = POST_PARTS[t.term];
+      if (!part) throw new Error(`post.html: no section owns "${t.term}"`);
+      return { ...t, part };
+    }),
+  },
 ];
 
 export const PREVIEWED = new Set([

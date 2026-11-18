@@ -16,12 +16,13 @@ import {
   type Mat3,
 } from '../math/rotation';
 import { SphereGrid } from '../math/sht';
-import { EARTH_VIEW, facing, loadEarth, type Signal } from '../signals';
+import { EARTH_VIEW, facing, loadEarth, worldMap, type Signal } from '../signals';
 import { SolverClient, type SolveEvent } from '../worker/client';
 import { reducedMotion } from './canvas';
 import { greyAt, inkAt } from './colormap';
 import { button, el, toggle } from './controls';
 import { CellGrid } from './cells';
+import { FlatView } from './flat';
 import { SphereView } from './sphere';
 
 export interface HeroAssets {
@@ -30,6 +31,8 @@ export interface HeroAssets {
 }
 
 const DISPLAY = { nlat: 96, nlon: 192 };
+/** The world map under the globe in the talk deck: one pixel per degree. */
+const MAP = { width: 360, height: 180 };
 /** Radians per second. */
 const SPIN_SPEED = 0.4;
 const LINE_MS = 1100;
@@ -40,6 +43,9 @@ const POLE = ((p: Mat3): number[] => [p[2]!, p[5]!, p[8]!])(
 
 const ease = (t: number): number => t * t * (3 - 2 * t);
 const same = (a: Mat3, b: Mat3): boolean => a.every((v, i) => v === b[i]);
+
+/** States the talk deck can put the figure in. */
+export type HeroStep = 'north' | 'scramble' | 'rebuild' | 'line' | 'free';
 
 interface Rebuilt {
   x: Float64Array;
@@ -53,6 +59,9 @@ interface Rebuilt {
 /**
  * The opening figure. The Earth turns; its coefficients move, and two lists of invariant
  * features don't. Each list is put to the same test: redraw the globe from it.
+ *
+ * With `data-deck` on its root (the talk deck), each list is named and the globe has its world map
+ * beneath it.
  */
 export class HeroFigure {
   private readonly lmax: number;
@@ -81,6 +90,8 @@ export class HeroFigure {
   private runs = 0;
   private rebuilt: Rebuilt | null = null;
   private lined = false;
+  /** A `line` step that came while the solver was still running. */
+  private lineWhenDone = false;
   /** The redrawn globe's own pose while it is not lined up with the Earth. */
   private own: Mat3 = identity3();
   private shown: Mat3 = identity3();
@@ -121,6 +132,7 @@ export class HeroFigure {
     this.cells.power.setReference(degreePower(this.x, this.lmax));
     this.cells.descriptor.setReference(this.invariant.values(this.x));
 
+    const deck = root.dataset.deck !== undefined;
     root.classList.add('rw', 'hr');
     root.replaceChildren();
 
@@ -137,10 +149,11 @@ export class HeroFigure {
     });
     this.status = el('div', { class: 'hr-status', attrs: { 'aria-live': 'polite' } });
 
-    const lead = (count: number, noun: string, what: string): HTMLElement =>
+    const lead = (name: string, count: number, noun: string, what: string): HTMLElement =>
       el(
         'div',
         { class: 'hr-lead' },
+        ...(deck ? [el('p', { class: 'hr-name', text: name })] : []),
         el(
           'div',
           { class: 'hr-head' },
@@ -172,6 +185,7 @@ export class HeroFigure {
             el('span', { class: 'rw-hint', text: 'drag to turn it' }),
           ),
           earthHost,
+          ...(deck ? [this.map(n)] : []),
           el(
             'div',
             { class: 'rw-row' },
@@ -181,7 +195,12 @@ export class HeroFigure {
           el(
             'div',
             { class: 'hr-list' },
-            lead(n, 'coefficients', 'The globe in spherical harmonics. Turn it and they change.'),
+            lead(
+              'Coefficients',
+              n,
+              'coefficients',
+              'The globe in spherical harmonics. Turn it and they change.',
+            ),
             this.cells.all.element,
           ),
         ),
@@ -195,6 +214,7 @@ export class HeroFigure {
               'div',
               {},
               lead(
+                'Power spectrum',
                 this.lmax + 1,
                 'features',
                 'The power spectrum, invariant to rotation: how much detail the globe has at each scale.',
@@ -214,6 +234,7 @@ export class HeroFigure {
               'div',
               {},
               lead(
+                'Selective bispectrum',
                 this.invariant.n,
                 'features',
                 `A selective bispectrum, also invariant: sums of products of three or four of the ${n} coefficients.`,
@@ -259,6 +280,43 @@ export class HeroFigure {
 
     void this.rebuild();
     requestAnimationFrame(this.tick);
+  }
+
+  apply(step: HeroStep): void {
+    switch (step) {
+      case 'north':
+        this.northUp();
+        break;
+      case 'scramble':
+        this.scramble();
+        break;
+      case 'rebuild':
+        void this.rebuild();
+        break;
+      case 'line':
+        if (this.rebuilt) this.setLined(true);
+        else this.lineWhenDone = true;
+        break;
+      case 'free':
+        this.lineWhenDone = false;
+        this.setLined(false);
+        break;
+    }
+  }
+
+  /** The Earth at rest as an equirectangular map, Greenwich in the middle, at the globe's band-limit. */
+  private map(n: number): HTMLElement {
+    const view = new FlatView(
+      worldMap(MAP.width, MAP.height, facing(EARTH_VIEW.lat, EARTH_VIEW.lon)),
+      'hr-map-view',
+    );
+    view.paint(this.x, this.vmax);
+    return el(
+      'div',
+      { class: 'hr-map' },
+      view.canvas,
+      el('p', { text: `The same ${n} coefficients, as a map` }),
+    );
   }
 
   private northUp(): void {
@@ -326,8 +384,10 @@ export class HeroFigure {
         this.redrawn.setSignal(b.x, this.vmax);
         this.lineButton.disabled = false;
         // The first reconstruction, on page load, lines itself up; "again" leaves it in its own pose.
-        if (run === 1) this.setLined(true);
-        else this.renderStatus();
+        if (run === 1 || this.lineWhenDone) {
+          this.lineWhenDone = false;
+          this.setLined(true);
+        } else this.renderStatus();
         return;
       }
       case 'error':
@@ -387,6 +447,6 @@ export class HeroFigure {
 
 export const mount: Mount = async (root) => {
   const [{ tables }, earth] = await Promise.all([sharedAssets(), loadEarth()]);
-  new HeroFigure(root, { tables, earth });
-  return {};
+  const figure = new HeroFigure(root, { tables, earth });
+  return { apply: (step) => figure.apply(step as HeroStep) };
 };

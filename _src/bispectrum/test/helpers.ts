@@ -33,6 +33,11 @@ export function readBlogFile(path: string): string {
 
 export const blogRoot = join(here, '..');
 
+/** A file of the repository, the blog's parent, as text. */
+export function readRepoFile(path: string): string {
+  return readFileSync(join(here, '..', '..', path), 'utf8');
+}
+
 export function loadTables(): InvariantTables {
   return buildTables(JSON.parse(dataFile('invariant.json').toString('utf8')));
 }

@@ -15,15 +15,19 @@ const TOKENS: Record<string, string> = Object.fromEntries(
   ].map((m) => [m[1]!, m[2]!.toUpperCase()]),
 );
 
+/** The pages that carry the brand: the post and the post that follows the talk. */
+const PAGES = ['index.html', 'post.html'];
+
 const ALLOWED = new Set([
   ...Object.values(TOKENS),
   ...Object.values(TINTS).map((t) => t.hex.toUpperCase()),
 ]);
 
 function sources(): { file: string; text: string }[] {
-  const out: { file: string; text: string }[] = [
-    { file: 'index.html', text: readBlogFile('index.html') },
-  ];
+  const out: { file: string; text: string }[] = PAGES.map((file) => ({
+    file,
+    text: readBlogFile(file),
+  }));
   const walk = (dir: string): void => {
     for (const name of readdirSync(dir)) {
       const path = join(dir, name);
@@ -83,8 +87,8 @@ describe('brand', () => {
     expect(bad).toEqual([]);
   });
 
-  it('shows the wordmark from its SVG, never retyped', () => {
-    expect(readBlogFile('index.html')).toMatch(/<img[^>]*data-brand="wordmark"/);
+  it.each(PAGES)('%s shows the wordmark from its SVG, never retyped', (file) => {
+    expect(readBlogFile(file)).toMatch(/<img[^>]*data-brand="wordmark"/);
     expect(readBlogFile('src/main.ts')).toContain('assets/brand/bispectrum-wordmark.svg');
   });
 });

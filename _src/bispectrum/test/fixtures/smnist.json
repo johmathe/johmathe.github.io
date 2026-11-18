@@ -1,0 +1,10 @@
+{
+  "rows": {
+    "ours": { "params": "230K", "rotated": 95.8, "ms": "0.26" },
+    "s2cnn": { "params": "155K", "rotated": 96.1, "ms": "1.02" },
+    "tp": { "params": "386K", "rotated": 96.1, "ms": "93.7" },
+    "power": { "params": "11K", "rotated": 77.7, "ms": "1.68" },
+    "cnn": { "params": "185K", "rotated": 13.4, "ms": "0.20" }
+  },
+  "speedups": ["4", "364"]
+}

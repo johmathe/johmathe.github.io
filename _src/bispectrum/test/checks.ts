@@ -1,7 +1,8 @@
 /**
- * Numbers the prose takes from page data. In `index.html` each one is written as
- * `<span data-check="key">value</span>`, and `prose.test.ts` compares the text with the value
- * computed here from `public/data`.
+ * Numbers the prose takes from page data. In `index.html` and `deck.html` each one is written as
+ * `<span data-check="key">value</span>`, and `prose.test.ts` and `deck.test.ts` compare the text
+ * with the value computed here from `public/data`, or for the paper's results, from a fixture
+ * checked against `paper/`.
  */
 
 import { dim } from '../src/math/basis';
@@ -80,7 +81,48 @@ function powerOnTwo(): { digit: number; p: number } {
   return { digit, p: e[digit]! / e.reduce((a, b) => a + b, 0) };
 }
 
+export interface SmnistRow {
+  params: string;
+  /** Mean accuracy on rotated test digits after training on upright ones (NR/R), in percent. */
+  rotated: number;
+  ms: string;
+}
+
+/** The rows of the paper's Spherical MNIST table, by the start of their label. */
+export const SMNIST_ROWS = {
+  ours: 'Bispectrum + MLP',
+  s2cnn: 'S2CNN + BatchNorm',
+  tp: 'Tensor-product net',
+  power: 'Power spectrum + MLP',
+  cnn: 'CNN (equirectangular)',
+} as const;
+
+export type SmnistKey = keyof typeof SMNIST_ROWS;
+
+/**
+ * The paper's Spherical MNIST rows and its speed-ups over the spherical CNN and the
+ * tensor-product network. The site that vendors this package has no `paper/`, so the numbers are
+ * kept in a fixture, which `paper.test.ts` compares with the paper when it is there.
+ */
+export interface SmnistFixture {
+  rows: Record<SmnistKey, SmnistRow>;
+  speedups: [string, string];
+}
+
+const smnist = (): SmnistFixture => fixture<SmnistFixture>('smnist.json');
+
+const smnistChecks = Object.fromEntries(
+  (Object.keys(SMNIST_ROWS) as SmnistKey[]).flatMap((k) => [
+    [`smnist.${k}.params`, () => smnist().rows[k].params],
+    [`smnist.${k}.acc`, () => `${smnist().rows[k].rotated.toFixed(1)}%`],
+    [`smnist.${k}.ms`, () => smnist().rows[k].ms],
+  ]),
+) as Record<string, () => string>;
+
 export const CHECKS: Record<string, () => string> = {
+  ...smnistChecks,
+  'smnist.vsS2': () => smnist().speedups[0],
+  'smnist.vsTp': () => smnist().speedups[1],
   'page.L': () => String(PAGE_L),
   'fp.n': () => entries(PAGE_L),
   'fp.triples': () => entries(PAGE_L, 'triples'),
@@ -119,6 +161,8 @@ export const CHECKS: Record<string, () => string> = {
   'bench.trainMax': () => ms(Math.max(...bench().rows.map((r) => r.train_ms))),
   'bench.infMin': () => ms(Math.min(...bench().rows.map((r) => r.inference_ms))),
   'bench.infMax': () => ms(Math.max(...bench().rows.map((r) => r.inference_ms))),
+  'bench.selMin': () => int(Math.min(...bench().rows.map((r) => r.selective))),
+  'bench.selMax': () => int(Math.max(...bench().rows.map((r) => r.selective))),
   'mlp.nr': () => pct(classifier().accuracy.mlp.test_nr),
   'mlp.r': () => pct(classifier().accuracy.mlp.test_r),
   'cnn.nr': () => pct(classifier().accuracy.cnn.test_nr),

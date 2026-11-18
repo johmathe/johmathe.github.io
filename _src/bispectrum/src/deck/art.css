@@ -1,0 +1,212 @@
+/* The illustrations of `art.ts` and the group icons of `icons.ts`, for the deck and the post. Sizes
+   are in viewBox units, so the drawings scale with their container. */
+
+.art {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.art .flow {
+  stroke: var(--ash);
+}
+
+.art .act {
+  stroke: var(--orange);
+  stroke-width: 3;
+}
+
+.art text {
+  stroke: none;
+}
+
+.art .lbl {
+  font: 500 15px var(--mono);
+  fill: var(--muted);
+}
+
+.art .lbl.on {
+  font-size: 17px;
+  font-weight: 600;
+  fill: var(--orange-text);
+}
+
+.art .mid {
+  text-anchor: middle;
+}
+
+.art .end {
+  text-anchor: end;
+}
+
+.art .num {
+  font: 600 30px var(--sans);
+  fill: var(--ash);
+  dominant-baseline: middle;
+}
+
+.art .num.on {
+  fill: var(--orange-text);
+}
+
+.art .bar {
+  stroke: none;
+  fill: var(--stone);
+}
+
+.art .bar.keep {
+  fill: var(--graphite);
+}
+
+.art .cell {
+  stroke: none;
+}
+
+.art .t0 {
+  fill: var(--sand);
+}
+
+.art .t1 {
+  fill: var(--orange-wash);
+}
+
+.art .t2 {
+  fill: var(--orange-light);
+}
+
+.art .t3 {
+  fill: var(--orange);
+}
+
+.art .globe {
+  fill: var(--sand);
+}
+
+.art .thin {
+  stroke: var(--stone);
+  stroke-width: 1.5;
+}
+
+.art .digit {
+  font: 700 34px var(--sans);
+  fill: var(--orange);
+  text-anchor: middle;
+  dominant-baseline: central;
+}
+
+.art .digit.sm {
+  font-size: 26px;
+}
+
+.art .loop {
+  stroke: var(--ash);
+  stroke-width: 2;
+  stroke-dasharray: 5 7;
+}
+
+/* Small globes: no equator across the digit */
+.art .poses .thin {
+  display: none;
+}
+
+.art .ask {
+  font: 700 30px var(--sans);
+  fill: var(--ink);
+  dominant-baseline: central;
+}
+
+.art .wire {
+  stroke: var(--rule);
+  stroke-width: 1.5;
+}
+
+.art .node {
+  fill: var(--panel);
+  stroke: var(--graphite);
+  stroke-width: 2;
+}
+
+.art .out {
+  font: 700 44px var(--sans);
+  fill: var(--ink);
+  text-anchor: middle;
+  dominant-baseline: central;
+}
+
+.art .orig {
+  fill: var(--sand);
+}
+
+.art .rebuilt {
+  fill: var(--orange-wash);
+  stroke: var(--orange);
+  stroke-width: 3;
+}
+
+.art .rebuilt.dash {
+  fill: none;
+  stroke-dasharray: 6 6;
+}
+
+.ic {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.ic .act {
+  stroke: var(--orange);
+  stroke-width: 3.5;
+}
+
+.ic .faint {
+  stroke: var(--rule);
+}
+
+.ic .thin {
+  stroke: var(--ash);
+  stroke-width: 1.8;
+}
+
+.ic .fill {
+  fill: var(--sand);
+}
+
+.ic .face {
+  fill: var(--orange-wash);
+}
+
+.ic .mirror {
+  stroke: var(--orange);
+  stroke-width: 2.5;
+  stroke-dasharray: 4 6;
+}
+
+.ic .dot,
+.ic .cell,
+.ic .blob {
+  stroke: none;
+  fill: var(--stone);
+}
+
+.ic .dot {
+  fill: var(--ink);
+}
+
+.ic .cell.c0 {
+  fill: var(--sand);
+}
+
+.ic .dot.on,
+.ic .cell.c2,
+.ic .blob.on {
+  fill: var(--orange);
+}

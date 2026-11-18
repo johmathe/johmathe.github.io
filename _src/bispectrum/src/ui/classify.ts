@@ -49,10 +49,13 @@ const SPIN_SPEED = 0.55;
 const percent = (v: number): string => `${(100 * v).toFixed(1)}%`;
 
 /** States the figure caption can put the figure in, one per numbered step. */
-export type ClassifyStep = 'spin' | 'power' | 'scramble' | 'six';
+export type ClassifyStep =
+  'still' | 'two' | 'side' | 'sideways' | 'spin' | 'power' | 'scramble' | 'six';
 
 /** In-plane half turn: the digits sit on the north pole, which faces the reader. */
 const HALF_TURN: Mat3 = Float64Array.of(-1, 0, 0, 0, -1, 0, 0, 0, 1);
+/** In-plane quarter turn: the 2 on its side, which the pixel CNN, trained upright, takes for an 8. */
+const SIDEWAYS: Mat3 = expMap([0, 0, -Math.PI / 2]);
 const TWO = 2;
 const SIX = 6;
 
@@ -334,6 +337,26 @@ export class ClassifyFigure {
   /** Puts the figure in the state a caption step describes. */
   apply(step: ClassifyStep): void {
     switch (step) {
+      case 'still':
+        this.setSpin(false);
+        this.setScrambled(false);
+        break;
+      case 'two':
+        // Upright, wherever a spin left it.
+        this.setSpin(false);
+        this.choose(TWO);
+        break;
+      case 'side':
+        this.setSpin(false);
+        this.turnTo(SIDEWAYS);
+        break;
+      case 'sideways':
+        // Already on its side, as the opening slide left it.
+        this.setSpin(false);
+        this.choose(TWO);
+        this.rot = SIDEWAYS;
+        this.refresh();
+        break;
       case 'spin':
         this.setScrambled(false);
         this.setSpin(true);

@@ -7,12 +7,26 @@ src="${BISPECTRUM_DIR:-$HOME/bispectrum}"
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # Excluded paths are also protected from --delete, so a local node_modules/ survives.
+# The talk deck and its teleprompter stay out of the site. post.html only uses the deck's art,
+# icons and logos.
 rsync -a --delete \
   --exclude node_modules/ \
   --exclude dist/ \
   --exclude scripts/ \
   --exclude __pycache__/ \
   --exclude '/*.md' \
+  --exclude /mocks/ \
+  --exclude /deck.html \
+  --exclude /prompter.html \
+  --exclude '/src/deck/deck.*' \
+  --exclude '/src/deck/prompter.*' \
+  --exclude '/src/deck/script.*' \
+  --exclude /src/deck/globe.ts \
+  --exclude /src/deck/qr.svg \
+  --exclude /src/deck/slides.ts \
+  --exclude /src/deck/sync.ts \
+  --exclude /test/deck.test.ts \
+  --exclude /test/sync.test.ts \
   "$src/blog/" "$here/bispectrum/"
 
 fonts=()

@@ -30,14 +30,17 @@ export class Surface {
   render(): void {
     const r = this.canvas.getBoundingClientRect();
     if (!r.width || !r.height) return;
+    // Under CSS zoom (the talk deck) the box on screen outgrows the layout box: drawing in layout
+    // pixels, scaled, keeps text and strokes in proportion with the page around them.
+    const zoom = r.width / (this.canvas.offsetWidth || r.width);
     const dpr = Math.min(devicePixelRatio || 1, 2);
     const [W, H] = [Math.round(r.width * dpr), Math.round(r.height * dpr)];
     if (this.canvas.width !== W || this.canvas.height !== H) {
       this.canvas.width = W;
       this.canvas.height = H;
     }
-    [this.w, this.h] = [r.width, r.height];
-    this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    [this.w, this.h] = [r.width / zoom, r.height / zoom];
+    this.ctx.setTransform(dpr * zoom, 0, 0, dpr * zoom, 0, 0);
     this.ctx.clearRect(0, 0, this.w, this.h);
     this.draw();
   }
