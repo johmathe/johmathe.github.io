@@ -2,6 +2,35 @@
    table at text width. The drawings themselves are styled by deck/art.css. */
 @import '../deck/art.css';
 
+/* ------------------------------------------------------------------ masthead */
+
+.tldr {
+  margin-top: 24px;
+  padding-left: 16px;
+  border-left: 3px solid var(--orange);
+}
+
+.tldr-kicker {
+  display: block;
+  margin-bottom: 4px;
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--orange-text);
+}
+
+.tldr p {
+  margin: 0;
+  font-size: 17px;
+  line-height: 1.55;
+  color: var(--graphite);
+}
+
+.tldr code {
+  font-size: 0.9em;
+}
+
 /* ------------------------------------------------------------------ chapters */
 
 /* A chapter whose first subsection has no heading of its own. */
@@ -11,17 +40,48 @@
 
 /* ------------------------------------------------------------------ classifier */
 
-/* A model the text has not introduced yet is left out. Rows: bispectrum, CNN, power spectrum. */
-.cf-show-cnn .cf-model:not(:nth-child(2)),
-.cf-show-two .cf-model:nth-child(1),
-.cf-show-cnn .cf-models > .cf-note,
-.cf-show-two .cf-models > .cf-note {
-  display: none;
-}
-
 /* The digit spins from the start, so the turn, spin and scramble buttons have nothing to add. */
 .cf .rw-panel > .rw-row {
   display: none;
+}
+
+/* With the digits in the signal's panel, that panel runs the full height of the three models:
+   the sphere and its map at the top, the digits at the bottom. */
+.cf[data-picker='panel'] .cf-stage {
+  align-items: stretch;
+}
+
+/* The caption says how the three were trained. */
+#demo .cf-models > .cf-note {
+  display: none;
+}
+
+.cf[data-picker='panel'] .cf-stage > .rw-panel {
+  display: flex;
+  flex-direction: column;
+}
+
+.cf[data-picker='panel'] .cf-stage > .rw-panel > .rw-controls {
+  margin: auto 0 0;
+  padding-top: 16px;
+}
+
+.cf[data-picker='panel'] .rw-picker {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  width: 100%;
+}
+
+.cf[data-picker='panel'] .rw-tile {
+  width: auto;
+  height: auto;
+  aspect-ratio: 1;
+}
+
+.cf[data-picker='panel'] .rw-tile-draw {
+  grid-column: 1 / -1;
+  height: 34px;
+  aspect-ratio: auto;
 }
 
 /* ------------------------------------------------------------------ cards */

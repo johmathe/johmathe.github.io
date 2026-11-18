@@ -59,6 +59,23 @@ const SIDEWAYS: Mat3 = expMap([0, 0, -Math.PI / 2]);
 const TWO = 2;
 const SIX = 6;
 
+type ModelKey = 'mlp' | 'cnn' | 'power';
+const MODEL_KEYS: readonly ModelKey[] = ['mlp', 'cnn', 'power'];
+
+const isModelKey = (k: string): k is ModelKey => (MODEL_KEYS as readonly string[]).includes(k);
+
+/** The models a page lists in `data-models`, in its order. All three, bispectrum first, without it. */
+function modelOrder(spec: string | undefined): ModelKey[] {
+  if (!spec?.trim()) return [...MODEL_KEYS];
+  return spec
+    .trim()
+    .split(/\s+/)
+    .map((k) => {
+      if (!isModelKey(k)) throw new Error(`no classifier model named ${k}`);
+      return k;
+    });
+}
+
 /**
  * Ten class probabilities as bars, with the predicted digit in large type. The top bar takes the
  * model's color; a wrong answer is said in words, since color is reserved for the method.
@@ -278,8 +295,38 @@ export class ClassifyFigure {
         el('div', { class: 'cf-note', text: note(a) }),
       );
 
+    const models: Record<ModelKey, HTMLElement> = {
+      mlp: model(
+        'Bispectrum + MLP',
+        `L = ${this.lmax}`,
+        this.descriptor.element,
+        `what it reads: the ${this.invariant.n}-number descriptor`,
+        this.mlpBars,
+        manifest.accuracy.mlp,
+      ),
+      cnn: model(
+        'Pixels + CNN',
+        `${manifest.nlat} × ${manifest.nlon} grid`,
+        image,
+        'what it reads: the signal as an image',
+        this.cnnBars,
+        manifest.accuracy.cnn,
+      ),
+      power: model(
+        'Power spectrum + MLP',
+        `L = ${this.lmax}`,
+        this.powerCells.element,
+        `what it reads: ${this.lmax + 1} numbers, one per degree`,
+        this.powerBars,
+        manifest.accuracy.power,
+      ),
+    };
+    const order = modelOrder(root.dataset.models);
+    const pickerRow = el('div', { class: 'rw-controls' }, this.picker.element);
+    // `data-picker="panel"` puts the digits under the sphere, in the signal's own panel.
+    if (root.dataset.picker === 'panel') signalPanel.append(pickerRow);
+    else root.append(pickerRow);
     root.append(
-      el('div', { class: 'rw-controls' }, this.picker.element),
       el(
         'div',
         { class: 'cf-stage' },
@@ -287,34 +334,15 @@ export class ClassifyFigure {
         el(
           'div',
           { class: 'cf-models' },
-          model(
-            'Bispectrum + MLP',
-            `L = ${this.lmax}`,
-            this.descriptor.element,
-            `what it reads: the ${this.invariant.n}-number descriptor`,
-            this.mlpBars,
-            manifest.accuracy.mlp,
-          ),
-          model(
-            'Pixels + CNN',
-            `${manifest.nlat} × ${manifest.nlon} grid`,
-            image,
-            'what it reads: the signal as an image',
-            this.cnnBars,
-            manifest.accuracy.cnn,
-          ),
-          model(
-            'Power spectrum + MLP',
-            `L = ${this.lmax}`,
-            this.powerCells.element,
-            `what it reads: ${this.lmax + 1} numbers, one per degree`,
-            this.powerBars,
-            manifest.accuracy.power,
-          ),
-          el('div', {
-            class: 'cf-note',
-            text: 'All three were trained on upright digits only. The bold digit under the bars is the true class.',
-          }),
+          ...order.map((k) => models[k]),
+          ...(order.length === MODEL_KEYS.length
+            ? [
+                el('div', {
+                  class: 'cf-note',
+                  text: 'All three were trained on upright digits only. The bold digit under the bars is the true class.',
+                }),
+              ]
+            : []),
         ),
       ),
     );
