@@ -4,30 +4,16 @@
 
 /* ------------------------------------------------------------------ masthead */
 
-.tldr {
-  margin-top: 24px;
+.masthead .lede {
+  margin: 24px 0 0;
   padding-left: 16px;
   border-left: 3px solid var(--orange);
-}
-
-.tldr-kicker {
-  display: block;
-  margin-bottom: 4px;
-  font-family: var(--mono);
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  color: var(--orange-text);
-}
-
-.tldr p {
-  margin: 0;
   font-size: 17px;
   line-height: 1.55;
   color: var(--graphite);
 }
 
-.tldr code {
+.masthead .lede code {
   font-size: 0.9em;
 }
 
