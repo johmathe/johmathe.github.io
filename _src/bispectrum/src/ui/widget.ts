@@ -20,6 +20,7 @@ import { SphereGrid } from '../math/sht';
 import { DIGIT_PLANE, digitSignal, loadEarth, type Signal } from '../signals';
 import { SolverClient, type SolveEvent } from '../worker/client';
 import type { BranchSnapshot } from '../worker/protocol';
+import { SAME_ORBIT_REL } from '../worker/select';
 import { BispectrumMap } from './bispectrum2d';
 import { ASH, cssGradient, MUTED } from './colormap';
 import {
@@ -69,13 +70,8 @@ const MIN_LMAX = WIDGET_CONFIG.seedDegree;
 const ANALYSIS = { nlat: 64, nlon: 128 };
 const DISPLAY = { nlat: 96, nlon: 192 };
 const ALIGN_ANIM_MS = 700;
-/**
- * A branch that matches the invariant but stays farther than this from every rotation of the
- * target would be a second orbit with the same invariant. The margin is wide on purpose: on
- * symmetric signals the invariant is flat to first order along some directions, so matching it to
- * `okTol` only pins the signal to about `sqrt(okTol)`.
- */
-const COLLISION_REL = 1e-3;
+/** An accepted candidate farther than this from every rotation of the signal is another orbit. */
+const COLLISION_REL = SAME_ORBIT_REL;
 
 interface Snapshot {
   degree: number;
@@ -95,14 +91,15 @@ interface Solve {
   seedFound: number;
   budget: number;
   ms: number;
-  featureRel: number | null;
-  /** Largest aligned error among the branches that match the invariant. */
-  worstAligned: number;
+  /** Representative of each distinct accepted signal, in rank order (empty until done). */
+  reps: number[];
+  /** Which of `reps` is shown. */
+  candidate: number;
   message: string;
 }
 
 const RETRY_HINT =
-  'Hit Reconstruct for other random starts. Very symmetric signals (a dot, a centred ring) are the hard case and may keep failing.';
+  'Reconstruct reruns the solver from other random starts. Very symmetric signals (a dot, a centred ring) are the hard case and may keep failing.';
 
 /** States the figure caption can put the widget in, one per numbered step. */
 export type ReconStep = 'turn' | 'scramble' | 'rebuild' | 'map';
@@ -160,6 +157,7 @@ export class ReconWidget {
   private readonly lmaxSlider: ReturnType<typeof slider>;
   private readonly degreeSlider: ReturnType<typeof slider>;
   private readonly alignToggle: ReturnType<typeof toggle>;
+  private readonly candidateButton: HTMLButtonElement;
   private readonly scrambleToggle: ReturnType<typeof toggle>;
   private readonly runButton: HTMLButtonElement;
   private readonly replayButton: HTMLButtonElement;
@@ -254,7 +252,7 @@ export class ReconWidget {
         () => {
           this.pad.clear();
           this.setImage(this.pad.image);
-          this.cancelSolve('Draw a digit on the pad.');
+          this.cancelSolve('The pad is empty.');
         },
         { kind: 'quiet' },
       ),
@@ -273,7 +271,7 @@ export class ReconWidget {
         'div',
         { class: 'rw-panel-head' },
         el('h4', { text: 'Signal' }),
-        el('span', { class: 'rw-hint', text: 'drag to rotate' }),
+        el('span', { class: 'rw-hint', text: 'draggable' }),
       ),
       el('div', { class: 'rw-sphere-wrap' }, origHost, this.padBox),
       this.origFlat.canvas,
@@ -291,6 +289,11 @@ export class ReconWidget {
     // Reconstruction panel.
     const reconHost = el('div', { class: 'rw-sphere' });
     this.alignToggle = toggle('align to signal', true, (on) => this.setAlign(on));
+    this.candidateButton = button('candidate', () => this.nextCandidate(), {
+      kind: 'quiet',
+      title: 'Another signal with the same descriptor',
+    });
+    this.candidateButton.hidden = true;
     this.reconNote = el('span', { class: 'rw-hint', text: 'from the descriptor alone' });
     const reconPanel = el(
       'div',
@@ -298,7 +301,7 @@ export class ReconWidget {
       el('div', { class: 'rw-panel-head' }, el('h4', { text: 'Reconstruction' }), this.reconNote),
       el('div', { class: 'rw-sphere-wrap' }, reconHost),
       this.reconFlat.canvas,
-      el('div', { class: 'rw-row' }, this.alignToggle.element),
+      el('div', { class: 'rw-row' }, this.alignToggle.element, this.candidateButton),
     );
 
     const colorbar = el(
@@ -721,7 +724,7 @@ export class ReconWidget {
 
   private async startSolve(): Promise<void> {
     if (this.pick === 'draw' && this.pad.empty) {
-      this.cancelSolve('Draw a digit on the pad.');
+      this.cancelSolve('The pad is empty.');
       return;
     }
     const lmax = this.lmax;
@@ -739,8 +742,8 @@ export class ReconWidget {
       seedFound: 0,
       budget: config.nSeedInits,
       ms: 0,
-      featureRel: null,
-      worstAligned: 0,
+      reps: [],
+      candidate: 0,
       message: '',
     };
     this.solve = solve;
@@ -773,10 +776,9 @@ export class ReconWidget {
         if (e.branches.length && this.follow) this.showDegree(e.degree);
         break;
       case 'done': {
-        const ok = e.branches.filter((b) => b.featureRel <= solve.config.okTol);
-        solve.featureRel = e.branches[e.best]?.featureRel ?? null;
-        solve.worstAligned = Math.max(0, ...ok.map((b) => b.alignedRel));
-        solve.phase = ok.length ? 'done' : 'failed';
+        solve.reps = e.accepted ? e.reps : [];
+        solve.candidate = 0;
+        solve.phase = e.accepted ? 'done' : 'failed';
         if (e.branches.length) {
           solve.snaps.set(solve.lmax, { degree: solve.lmax, branches: e.branches, best: e.best });
           if (this.follow) this.showDegree(solve.lmax);
@@ -794,8 +796,23 @@ export class ReconWidget {
     this.renderStatus();
   }
 
+  /** Shows the next distinct accepted signal of the finished solve. */
+  private nextCandidate(): void {
+    const s = this.solve;
+    const final = s?.snaps.get(s.lmax);
+    if (!s || !final || s.reps.length < 2) return;
+    s.candidate = (s.candidate + 1) % s.reps.length;
+    final.best = s.reps[s.candidate]!;
+    this.showDegree(s.lmax);
+    this.renderStatus();
+  }
+
   /** The scrubber needs two solved degrees to move between; replay waits for the solve to end. */
   private syncScrubber(): void {
+    const s = this.solve;
+    this.candidateButton.hidden = !s || s.phase !== 'done' || s.reps.length < 2;
+    if (s && s.reps.length > 1)
+      this.candidateButton.textContent = `candidate ${s.candidate + 1} of ${s.reps.length}`;
     const several = this.solvedDegrees().length > 1;
     const running = this.solve?.phase === 'seeding' || this.solve?.phase === 'marching';
     this.degreeSlider.input.disabled = !several;
@@ -809,7 +826,12 @@ export class ReconWidget {
     const last = Math.max(-1, ...s.snaps.keys());
     const shown = this.shownDegree !== null ? s.snaps.get(this.shownDegree) : undefined;
     const b = shown?.branches[shown.best];
-    const err = b ? ` Error after alignment (ℓ ≤ ${shown!.degree}): ${sci(b.alignedRel)}.` : '';
+    const err =
+      b && Number.isFinite(b.alignedRel)
+        ? ` Error after alignment (ℓ ≤ ${shown!.degree}): ${sci(b.alignedRel)}.`
+        : '';
+    const final = s.snaps.get(s.lmax);
+    const chosen = final?.branches[final.best];
     let text = '';
     switch (s.phase) {
       case 'seeding':
@@ -822,18 +844,26 @@ export class ReconWidget {
           text = `No candidate survived degree ${last}. ${RETRY_HINT}`;
         break;
       }
-      case 'done':
-        text =
-          s.worstAligned > COLLISION_REL
-            ? `A candidate matches the descriptor to ${sci(s.featureRel ?? NaN)} but stays ${sci(s.worstAligned)} away from every rotation of the signal. That would be a second signal with the same descriptor. If it reproduces, please tell us.`
-            : `Recovered ${dim(s.lmax)} coefficients from the ${this.invariant(s.lmax).n} numbers of the descriptor in ${secs(s.ms)} (${plural(s.seedTried, 'random start')}). Descriptor mismatch ${sci(s.featureRel ?? NaN)}.${err}`;
+      case 'done': {
+        const n = s.reps.length;
+        const which =
+          n > 1
+            ? ` ${n} distinct signals match the descriptor. Candidate ${s.candidate + 1}, ranked by descriptor mismatch alone.`
+            : '';
+        const far =
+          chosen && chosen.alignedRel > COLLISION_REL
+            ? ' This candidate is not a rotation of the signal, so it is a second signal with the same descriptor. If it reproduces, please tell us.'
+            : '';
+        text = `Recovered ${dim(s.lmax)} coefficients from the ${this.invariant(s.lmax).n} numbers of the descriptor in ${secs(s.ms)} (${plural(s.seedTried, 'random start')}). Descriptor mismatch ${sci(chosen?.featureRel ?? NaN)}.${err}${which}${far}`;
         break;
+      }
       case 'stopped':
         text = last < 0 ? 'Stopped.' : `Stopped after degree ${last} of ${s.lmax}.${err}`;
         break;
       case 'failed':
-        text =
-          s.seedFound === 0
+        text = chosen
+          ? `Missed the tolerance: the closest candidate matches the descriptor to ${sci(chosen.featureRel)}, against ${sci(s.config.okTol)} required. ${RETRY_HINT}`
+          : s.seedFound === 0
             ? `No consistent guess in ${s.seedTried} random starts. ${RETRY_HINT}`
             : `No candidate survived degree ${last}. ${RETRY_HINT}`;
         break;

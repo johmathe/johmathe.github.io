@@ -93,7 +93,7 @@ const POST_PARTS: Record<string, string> = {
   'spherical harmonic': 'sphere',
   degree: 'sphere',
   'band-limit': 'sphere',
-  selective: 'chain',
+  selective: 'ring',
 };
 
 export interface Page {
@@ -132,12 +132,12 @@ export const NAMED_ONCE: Term[] = [
   { term: 'closure phase', pattern: words('closure phases?') },
   { term: 'speckle masking', pattern: words('speckle masking') },
   { term: 'cryo-EM', pattern: words('cryo-?EM') },
+  { term: 'Kronecker table', pattern: words('Kronecker') },
 ];
 
 export const UNUSED: Term[] = [
   { term: 'fingerprint', pattern: words('fingerprints?') },
   { term: 'hand', pattern: words('hands?') },
-  { term: 'Kronecker table', pattern: words('Kronecker') },
   { term: 'Levenberg-Marquardt', pattern: words('Levenberg') },
   { term: 'NR/R', pattern: /\bNR\/R\b/ },
   { term: 'pp', pattern: /\bpp\b/ },

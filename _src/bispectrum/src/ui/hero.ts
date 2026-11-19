@@ -18,6 +18,7 @@ import {
 import { SphereGrid } from '../math/sht';
 import { EARTH_VIEW, facing, loadEarth, worldMap, type Signal } from '../signals';
 import { SolverClient, type SolveEvent } from '../worker/client';
+import type { FinalBranch } from '../worker/protocol';
 import { reducedMotion } from './canvas';
 import { greyAt, inkAt } from './colormap';
 import { button, el, toggle } from './controls';
@@ -43,6 +44,7 @@ const POLE = ((p: Mat3): number[] => [p[2]!, p[5]!, p[8]!])(
 
 const ease = (t: number): number => t * t * (3 - 2 * t);
 const same = (a: Mat3, b: Mat3): boolean => a.every((v, i) => v === b[i]);
+const sci = (v: number): string => v.toExponential(1).replace('e-', 'e−');
 
 /** States the talk deck can put the figure in. */
 export type HeroStep = 'north' | 'scramble' | 'rebuild' | 'line' | 'free';
@@ -51,8 +53,15 @@ interface Rebuilt {
   x: Float64Array;
   /** Rotation that takes the rebuilt signal onto the Earth at rest. */
   toEarth: Mat3;
-  /** Relative difference from the Earth once lined up. */
+  /** Relative error of the aligned, band-limited coefficients against the Earth's. */
   rel: number;
+  seconds: number;
+}
+
+/** The accepted candidates of the last solve, one per distinct signal, in rank order. */
+interface Candidates {
+  branches: FinalBranch[];
+  reps: number[];
   seconds: number;
 }
 
@@ -78,6 +87,7 @@ export class HeroFigure {
   private readonly spinToggle: ReturnType<typeof toggle>;
   private readonly lineButton: HTMLButtonElement;
   private readonly againButton: HTMLButtonElement;
+  private readonly candidateButton: HTMLButtonElement;
   private readonly status: HTMLElement;
 
   private rot: Mat3 = identity3();
@@ -89,6 +99,8 @@ export class HeroFigure {
 
   private runs = 0;
   private rebuilt: Rebuilt | null = null;
+  private candidates: Candidates | null = null;
+  private candidate = 0;
   private lined = false;
   /** A `line` step that came while the solver was still running. */
   private lineWhenDone = false;
@@ -147,6 +159,11 @@ export class HeroFigure {
       kind: 'quiet',
       title: 'Rebuild from other random starts',
     });
+    this.candidateButton = button('candidate', () => this.showCandidate(this.candidate + 1), {
+      kind: 'quiet',
+      title: 'Another signal with the same features',
+    });
+    this.candidateButton.hidden = true;
     this.status = el('div', { class: 'hr-status', attrs: { 'aria-live': 'polite' } });
 
     const lead = (name: string, count: number, noun: string, what: string): HTMLElement =>
@@ -247,6 +264,7 @@ export class HeroFigure {
               'reconstruction from the bispectrum',
               this.lineButton,
               this.againButton,
+              this.candidateButton,
             ),
           ),
         ),
@@ -343,6 +361,8 @@ export class HeroFigure {
   private async rebuild(): Promise<void> {
     const run = ++this.runs;
     this.rebuilt = null;
+    this.candidates = null;
+    this.candidateButton.hidden = true;
     this.lined = false;
     this.own = identity3();
     this.lineT0 = -Infinity;
@@ -374,15 +394,21 @@ export class HeroFigure {
         return;
       }
       case 'done': {
-        const b = e.branches[e.best];
         this.againButton.disabled = false;
-        if (!b || b.featureRel > WIDGET_CONFIG.okTol) {
-          this.status.textContent = 'The solver ran out of random starts. Press “again”.';
+        const b = e.branches[e.best];
+        if (!b) {
+          this.status.textContent =
+            'No candidate survived from these random starts. “again” reruns the solver from new ones.';
           return;
         }
-        this.rebuilt = { x: b.x, toEarth: b.rot, rel: b.alignedRel, seconds: e.ms / 1000 };
-        this.redrawn.setSignal(b.x, this.vmax);
-        this.lineButton.disabled = false;
+        if (!e.accepted) {
+          this.redrawn.setSignal(b.x, this.vmax);
+          this.status.textContent = `Missed the tolerance: the closest candidate matches the features to ${sci(b.featureRel)}, against ${sci(WIDGET_CONFIG.okTol)} required. “again” reruns the solver from new random starts.`;
+          return;
+        }
+        this.candidates = { branches: e.branches, reps: e.reps, seconds: e.ms / 1000 };
+        this.candidateButton.hidden = e.reps.length < 2;
+        this.showCandidate(0);
         // The first reconstruction, on page load, lines itself up; "again" leaves it in its own pose.
         if (run === 1 || this.lineWhenDone) {
           this.lineWhenDone = false;
@@ -396,13 +422,27 @@ export class HeroFigure {
     }
   }
 
+  /** Shows accepted candidate `k` (mod their count); the choice of the first one was blind. */
+  private showCandidate(k: number): void {
+    const c = this.candidates;
+    if (!c) return;
+    this.candidate = k % c.reps.length;
+    const b = c.branches[c.reps[this.candidate]!]!;
+    this.rebuilt = { x: b.x, toEarth: b.rot, rel: b.alignedRel, seconds: c.seconds };
+    this.redrawn.setSignal(b.x, this.vmax);
+    this.lineButton.disabled = false;
+    this.candidateButton.textContent = `candidate ${this.candidate + 1} of ${c.reps.length}`;
+    this.renderStatus();
+  }
+
   private renderStatus(): void {
     const r = this.rebuilt;
     if (!r) return;
-    const digits = Math.max(1, Math.min(15, Math.floor(-Math.log10(Math.max(r.rel, 1e-16)))));
+    const n = this.candidates?.reps.length ?? 1;
+    const others = n > 1 ? ` ${n} distinct globes match the features.` : '';
     this.status.textContent = this.lined
-      ? `Lined up, it matches the rough Earth to ${digits} digits.`
-      : `Reconstructed in ${r.seconds.toFixed(1)} s from these features alone: the same globe, in a pose of its own.`;
+      ? `Lined up, the rebuilt coefficients differ from the rough Earth's by ${sci(r.rel)} (relative error).${others}`
+      : `Reconstructed in ${r.seconds.toFixed(1)} s from these features alone, in a pose of its own.${others}`;
   }
 
   /** Recomputes the three lists from the turned globe: only the first one moves. */

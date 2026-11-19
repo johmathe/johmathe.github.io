@@ -8,6 +8,7 @@ import { blogRoot, fixture, readRepoFile } from './helpers';
 
 const TABLE = 'paper/experiments/smnist_figure/smnist_protocol_table.tex';
 const PAPER = 'paper/bispectrum.tex';
+const TIMING = 'experiments/tooling/results/smnist_baselines/timing_h100.json';
 
 /** A row of the paper's Spherical MNIST table: model & params & NR/NR & R/R & NR/R & latency. */
 function tableRow(tex: string, key: SmnistKey): SmnistRow {
@@ -27,6 +28,26 @@ describe.skipIf(!hasPaper)('the Spherical MNIST fixture', () => {
 
   it.each(Object.keys(SMNIST_ROWS) as SmnistKey[])('matches the paper table for %s', (key) => {
     expect(fx.rows[key]).toEqual(tableRow(readRepoFile(TABLE), key));
+  });
+
+  it('keeps the unrounded latencies of the raw H100 timing records', () => {
+    if (!existsSync(join(blogRoot, '..', TIMING))) return;
+    const raw = JSON.parse(readRepoFile(TIMING)) as {
+      results: { model: string; batch_size: number; median_ms: number; error?: string | null }[];
+    };
+    const at16 = (model: string): number =>
+      raw.results.find((r) => r.model === model && r.batch_size === 16 && !r.error)!.median_ms;
+    expect(fx.latency_ms).toEqual({
+      ours: at16('bispectrum'),
+      s2cnn: at16('s2cnn_bn'),
+      tp: at16('tp_c24_l6'),
+    });
+    const ratio = (k: 's2cnn' | 'tp'): string =>
+      (fx.latency_ms[k] / fx.latency_ms.ours).toFixed(0);
+    expect([ratio('s2cnn'), ratio('tp')]).toEqual(fx.speedups);
+    for (const k of ['ours', 's2cnn', 'tp'] as const) {
+      expect(fx.rows[k].ms).toBe(fx.latency_ms[k].toFixed(fx.rows[k].ms.split('.')[1]!.length));
+    }
   });
 
   it('matches the speed-ups in the paper', () => {

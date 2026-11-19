@@ -6,7 +6,7 @@
     <title>bispectrum: Selective G-Bispectra Made Practical</title>
     <meta
       name="description"
-      content="Fast, exact, lossless symmetry invariants for PyTorch. Notes on selective G-bispectra (NeurIPS 2026): invariant by construction, complete for generic signals, linear in size."
+      content="Fast, exact symmetry invariants for PyTorch. Notes on selective G-bispectra (NeurIPS 2026): invariant by construction, linear in size, and complete for generic signals on several finite groups and the disk."
     />
     <!-- Link previews need absolute URLs: build with SITE_URL set (see vite.config.ts). -->
     <meta property="og:type" content="article" />
@@ -16,14 +16,14 @@
     />
     <meta
       property="og:description"
-      content="Fast, exact, lossless symmetry invariants for PyTorch. Notes on selective G-bispectra (NeurIPS 2026): invariant by construction, complete for generic signals, linear in size."
+      content="Fast, exact symmetry invariants for PyTorch. Notes on selective G-bispectra (NeurIPS 2026): invariant by construction, linear in size, and complete for generic signals on several finite groups and the disk."
     />
     <meta property="og:image" content="__SITE_URL__card.png" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
     <meta
       property="og:image:alt"
-      content="bispectrum, NeurIPS 2026: fast, exact, lossless symmetry invariants for PyTorch. The Earth beside the 638 numbers of its selective bispectrum."
+      content="bispectrum, NeurIPS 2026: fast, exact symmetry invariants for PyTorch. The Earth beside the 638 numbers of its selective bispectrum."
     />
     <meta name="twitter:card" content="summary_large_image" />
     <link rel="stylesheet" href="./src/style.css" />
@@ -41,7 +41,7 @@
             height="32"
           />: Selective \(G\)-Bispectra Made Practical
         </h1>
-        <p class="dek">Fast, exact, lossless symmetry invariants for PyTorch.</p>
+        <p class="dek">Fast, exact symmetry invariants for PyTorch.</p>
         <p class="byline">
           Johan Mathe, Adele Myers Lantow, Simon Mataigne and Nina Miolane ·
           <a href="https://arxiv.org/abs/2605.07270">Paper</a> ·
@@ -200,24 +200,25 @@
           Let's take a periodic function \(r(\theta)\), drawn as a closed curve with radius
           \(r(\theta)\) at angle \(\theta\), and write it as a mean radius \(c_0\) plus 8 waves,
         </p>
-        <p>\[ r(\theta) = c_0 + 2 \sum_{k=1}^{8} |c_k| \cos(k\theta - \varphi_k). \]</p>
+        <p>\[ r(\theta) = c_0 + 2 \sum_{k=1}^{8} |c_k| \cos(k\theta + \varphi_k). \]</p>
         <p>
           The complex numbers \(c_k = |c_k|\, e^{i\varphi_k}\) are the Fourier coefficients of
-          \(r\), conjugated so that a turn advances the phases. Rotating the curve by \(\alpha\)
-          replaces \(\theta\) by \(\theta - \alpha\), which multiplies each coefficient by a phase,
+          \(r\), with the sign convention of <code>torch.fft</code>. Rotating the curve by
+          \(\alpha\) replaces \(\theta\) by \(\theta - \alpha\), which multiplies each coefficient
+          by a phase,
         </p>
-        <p>\[ c_k \mapsto e^{ik\alpha}\, c_k, \]</p>
+        <p>\[ c_k \mapsto e^{-ik\alpha}\, c_k, \]</p>
         <p>
-          so the phases advance at different rates, \(\varphi_k\) by \(k\alpha\), and the
-          magnitudes don't change. The group acts diagonally on the coefficients, and the pose is a
-          single phase shared by all of them in the ratio 1 : 2 : 3 : …
+          so the phases fall at different rates, \(\varphi_k\) by \(k\alpha\), and the magnitudes
+          don't change. The group acts diagonally on the coefficients, and the pose is a single
+          phase shared by all of them in the ratio 1 : 2 : 3 : …
         </p>
         <p>
           The <dfn>power spectrum</dfn> \(|c_k|^2\) drops the phases, so it is invariant, and it is
           also very far from complete. In step 2 of the figure below, a scramble keeps every
           \(|c_k|\), draws new phases at random, and gives a different curve with the same power
           spectrum. A rotation moves the phases \(\varphi_1, \dots, \varphi_8\) along a line,
-          \(\varphi_k \mapsto \varphi_k + k\alpha\), whereas the scramble can move them anywhere.
+          \(\varphi_k \mapsto \varphi_k - k\alpha\), whereas the scramble can move them anywhere.
           What we want are functions of the phases that are constant along such lines and tell
           different lines apart.
         </p>
@@ -230,8 +231,8 @@
           zero is invariant. The smallest interesting ones are cubic:
         </p>
         <p>
-          \[ \beta_{k_1, k_2} = c_{k_1}\, c_{k_2}\, \overline{c_{k_1 + k_2}} \;\mapsto\; e^{i(k_1 +
-          k_2 - (k_1 + k_2))\alpha}\, \beta_{k_1, k_2} = \beta_{k_1, k_2}. \]
+          \[ \beta_{k_1, k_2} = c_{k_1}\, c_{k_2}\, \overline{c_{k_1 + k_2}} \;\mapsto\; e^{-i(k_1
+          + k_2 - (k_1 + k_2))\alpha}\, \beta_{k_1, k_2} = \beta_{k_1, k_2}. \]
         </p>
         <p>
           The phase of \(\beta_{k_1, k_2}\) is \(\varphi_{k_1} + \varphi_{k_2} - \varphi_{k_1 +
@@ -254,31 +255,32 @@
         <figcaption>
           <ol class="steps">
             <li>
-              <button type="button" class="step" data-step="turn">Turn it.</button> One full turn
-              of the curve. Each \(\varphi_k\) goes round \(k\) times, while the power spectrum
-              (bars) and every \(\beta_{k_1, k_2}\) stay fixed and the point \((\varphi_1,
+              <button type="button" class="step" data-step="turn">Rotation.</button> One full turn
+              of the curve. Each \(\varphi_k\) goes round \(k\) times backwards, while the power
+              spectrum (bars) and every \(\beta_{k_1, k_2}\) stay fixed and the point \((\varphi_1,
               \varphi_2)\) runs along its line.
             </li>
             <li>
-              <button type="button" class="step" data-step="scramble">Scramble the phases.</button>
+              <button type="button" class="step" data-step="scramble">Phase scramble.</button>
               New random \(\varphi_k\), the same \(|c_k|\): a different curve (dashed, the one
               before), a point on another line, and different \(\beta\).
             </li>
             <li>
-              <button type="button" class="step" data-step="pick">Pick an entry.</button>
+              <button type="button" class="step" data-step="pick">One entry.</button>
               \(\beta_{2,3} = c_2 c_3 \overline{c_5}\), with its three coefficients marked. As the
-              curve turns they advance by \(2\alpha\), \(3\alpha\) and \(5\alpha\), and the entry's
-              phase \(\varphi_2 + \varphi_3 - \varphi_5\) stays put. Click any other cell.
+              curve turns their phases change by \(-2\alpha\), \(-3\alpha\) and \(-5\alpha\), and
+              the entry's phase \(\varphi_2 + \varphi_3 - \varphi_5\) stays put. Any other cell can
+              be selected.
             </li>
             <li>
-              <button type="button" class="step" data-step="rebuild">Invert the chain.</button>
+              <button type="button" class="step" data-step="rebuild">Coefficient recovery.</button>
               The 9 outlined entries, one per step: \(\beta_{0,0}\) gives \(c_0\), \(\beta_{0,1}\)
               gives \(|c_1|\), and each \(\beta_{1,k}\) gives \(c_{k+1}\). The recovered phases are
               the orange marks on the \(\varphi_k\) row, and the curve they give is drawn in
               orange. The chain is explained <a href="#ring-finite">below</a>.
             </li>
             <li>
-              <button type="button" class="step" data-step="free">Move the free phase.</button>
+              <button type="button" class="step" data-step="free">Free phase.</button>
               No entry fixes \(\varphi_1\). Changing it by \(\delta\) changes each recovered
               \(\varphi_k\) by \(k\delta\), a rotation: the rebuilt curve turns and its point
               slides along the same line. The sweep ends on the signal.
@@ -344,9 +346,8 @@
           and the power spectrum becomes the matrix \(\hat f(\rho)\, \hat f(\rho)^\dagger\),
           invariant because \(\rho(h)^\dagger \rho(h) = I\). For SO(2) the irreps are the \(1
           \times 1\) matrices \(e^{ik\alpha}\), the transform is the usual one, and a rotation by
-          \(\alpha\) multiplies \(\hat f(\rho_k)\) by \(e^{-ik\alpha}\). The ring's \(c_k\), which
-          turn by \(e^{ik\alpha}\), are their complex conjugates. Conjugating every formula changes
-          nothing else, and from here on we keep the paper's conventions.
+          \(\alpha\) multiplies \(\hat f(\rho_k)\) by \(e^{-ik\alpha}\), the convention of the ring
+          above and of <code>torch.fft</code>.
         </p>
         <p>
           Counting shows that the transform loses nothing. The irreps of a finite group satisfy
@@ -527,7 +528,7 @@
           \otimes \rho_2)(h)^\dagger = C \big[\bigoplus \rho(h)^\dagger\big] C^\dagger\) on the
           right, the block-diagonal factor picks up \(\bigoplus \rho(h)\) on the left, and the two
           cancel. On the ring every block is \(1 \times 1\), \(C = 1\), the split is the single
-          frequency \(k_1 + k_2\), and the formula is \(\beta_{k_1, k_2}\) up to conjugation.
+          frequency \(k_1 + k_2\), and the formula is \(\beta_{k_1, k_2}\) again.
         </p>
         <p>
           Kakarala (1992) proved that the \(G\)-bispectrum determines a signal on a finite group up
@@ -619,7 +620,7 @@
               </tr>
               <tr>
                 <th>Action</th>
-                <td>\(c_k \mapsto e^{ik\alpha} c_k\)</td>
+                <td>\(c_k \mapsto e^{-ik\alpha} c_k\)</td>
                 <td>\(\hat f(\rho) \mapsto \hat f(\rho)\, \rho(h)^\dagger\)</td>
                 <td>\(\mathbf F_\ell \mapsto D^\ell(R)\, \mathbf F_\ell\)</td>
               </tr>
@@ -736,15 +737,15 @@
           <span data-check="sphere64.fullTerms">267 million</span> such terms. Our selective
           version keeps <span data-check="sphere15.sel">380</span> numbers at \(L = 15\) and
           <span data-check="sphere64.sel">5,610</span> at \(L = 64\), for
-          <span data-check="sphere64.ratio">25</span> times less work.
+          <span data-check="sphere64.ratio">24.64</span> times fewer Clebsch–Gordan terms.
         </p>
         <p>
           On a real signal the full list repeats itself, since entries that differ only in the
           order of their three degrees are proportional and some are always zero. Counted once
           each, there are <span data-check="sphere15.distinct">352</span> distinct entries at \(L =
           15\) and <span data-check="sphere64.distinct">22,945</span> at \(L = 64\). Against those
-          the selective version saves little at small band-limits, and at \(L = 64\) it does
-          <span data-check="sphere64.distinctRatio">8</span> times less work.
+          the selective version saves little at small band-limits, and at \(L = 64\) it sums
+          <span data-check="sphere64.distinctTermsRatio">8</span> times fewer Clebsch–Gordan terms.
         </p>
       </section>
       <figure class="l-body widget-figure">
@@ -986,20 +987,23 @@ logits = head(z)</code></pre>
           points, so <code>CnonCn</code> can take the place of the max:
         </p>
         <pre data-snippet="pooling"><code><span class="k">import</span> torch
+<span class="k">import</span> torch.nn <span class="k">as</span> nn
 <span class="k">import</span> torch.nn.functional <span class="k">as</span> F
 <span class="k">from</span> bispectrum <span class="k">import</span> CnonCn
 
-<span class="c"># x: output of a group convolution, (batch, channels, 8 poses, height, width)</span>
-before = x.max(dim=2).values               <span class="c"># keep the largest of the 8</span>
+B, C, G, H, W = 4, 16, 8, 28, 28
+x = torch.randn(B, C, G, H, W)  <span class="c"># group conv output, 8 poses per channel and pixel</span>
+proj = nn.Conv2d(2 * G * C, C, kernel_size=1)
 
-bsp = CnonCn(n=8)                          <span class="c"># keep everything but the pose</span>
-B, C, G, H, W = x.shape
-<span class="c"># one ring of 8 per channel and pixel</span>
-beta = bsp(x.permute(0, 1, 3, 4, 2).reshape(-1, G))
-z = torch.cat([beta.real, beta.imag], dim=-1)
-z = z.sign() * z.abs().log1p()
-z = z.reshape(B, C, H, W, -1).permute(0, 1, 4, 2, 3).reshape(B, -1, H, W)
-after = F.relu(proj(z))                    <span class="c"># proj = nn.Conv2d(16 * C, C, 1)</span></code></pre>
+before = x.max(dim=2).values  <span class="c"># (B, C, H, W), the largest of the 8</span>
+
+bsp = CnonCn(n=G)
+rings = x.permute(0, 1, 3, 4, 2).reshape(-1, G)  <span class="c"># (B·C·H·W, 8)</span>
+beta = bsp(rings)  <span class="c"># (B·C·H·W, 8), complex</span>
+z = torch.cat([beta.real, beta.imag], dim=-1)  <span class="c"># (B·C·H·W, 16)</span>
+z = z.sign() * z.abs().log1p()  <span class="c"># signed log</span>
+z = z.reshape(B, C, H, W, 2 * G).permute(0, 1, 4, 2, 3).reshape(B, 2 * G * C, H, W)
+after = F.relu(proj(z))  <span class="c"># (B, C, H, W)</span></code></pre>
       </section>
 
       <section class="l-body" id="speed">
@@ -1211,7 +1215,7 @@ _scatter_add_complex(result, entry, prods)</code></pre>
           >
           (NeurIPS 2026), which has the proofs, the protocols and the tables. The asides, the small
           classifiers behind the figures and the rerun of the benchmark are additions of this page.
-          The library, fast, exact, lossless symmetry invariants for PyTorch, is on
+          The library, fast and exact symmetry invariants for PyTorch, is on
           <a href="https://github.com/geometric-intelligence/bispectrum">GitHub</a> and installs
           with <code>pip install bispectrum</code> on Python 3.12. The numbers quoted here are
           those of the camera-ready version, and an earlier version on arXiv may differ in places.

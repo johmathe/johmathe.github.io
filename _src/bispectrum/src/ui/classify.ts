@@ -251,7 +251,7 @@ export class ClassifyFigure {
         'div',
         { class: 'rw-panel-head' },
         el('h4', { text: 'Signal' }),
-        el('span', { class: 'rw-hint', text: 'drag to rotate' }),
+        el('span', { class: 'rw-hint', text: 'draggable' }),
       ),
       el('div', { class: 'rw-sphere-wrap' }, host, padBox),
       flat.canvas,

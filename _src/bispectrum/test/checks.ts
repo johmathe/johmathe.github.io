@@ -107,6 +107,8 @@ export type SmnistKey = keyof typeof SMNIST_ROWS;
 export interface SmnistFixture {
   rows: Record<SmnistKey, SmnistRow>;
   speedups: [string, string];
+  /** Unrounded median latencies in ms, from the raw H100 timing records, for the ratios. */
+  latency_ms: Record<'ours' | 's2cnn' | 'tp', number>;
 }
 
 const smnist = (): SmnistFixture => fixture<SmnistFixture>('smnist.json');
@@ -121,8 +123,9 @@ const smnistChecks = Object.fromEntries(
 
 export const CHECKS: Record<string, () => string> = {
   ...smnistChecks,
-  'smnist.vsS2': () => smnist().speedups[0],
-  'smnist.vsTp': () => smnist().speedups[1],
+  'smnist.vsS2': () => (smnist().latency_ms.s2cnn / smnist().latency_ms.ours).toFixed(0),
+  'smnist.vsTp': () => (smnist().latency_ms.tp / smnist().latency_ms.ours).toFixed(0),
+  'smnist.ours.msRaw': () => smnist().latency_ms.ours.toFixed(3),
   'page.L': () => String(PAGE_L),
   'fp.n': () => entries(PAGE_L),
   'fp.triples': () => entries(PAGE_L, 'triples'),
@@ -147,14 +150,21 @@ export const CHECKS: Record<string, () => string> = {
   'sphere15.coeffs': () => int(sphere('coefficients', 15)),
   'sphere15.full': () => int(sphere('full', 15)),
   'sphere15.sel': () => int(sphere('selective', 15)),
+  'sphere15.cubic': () => entries(15, 'triples'),
+  'sphere15.quartic': () => entries(15, 'energies'),
+  'sphere15.channels': () => int(2 * sphere('selective', 15)),
   'sphere64.full': () => int(sphere('full', 64)),
   'sphere64.sel': () => int(sphere('selective', 64)),
   'sphere64.fullTerms': () => `${Math.round(sphere('full_terms', 64) / 1e6)} million`,
-  'sphere64.ratio': () => (sphere('full_terms', 64) / sphere('selective_terms', 64)).toFixed(0),
+  'sphere64.ratio': () => (sphere('full_terms', 64) / sphere('selective_terms', 64)).toFixed(2),
+  'sphere64.fullTermsExact': () => int(sphere('full_terms', 64)),
+  'sphere64.selTermsExact': () => int(sphere('selective_terms', 64)),
+  'sphere64.storedRatio': () => (sphere('full', 64) / sphere('selective', 64)).toFixed(2),
   'sphere64.selTerms': () => `${(sphere('selective_terms', 64) / 1e6).toFixed(1)} million`,
   'sphere15.distinct': () => int(distinctFull(15).entries),
   'sphere64.distinct': () => int(distinctFull(64).entries),
-  'sphere64.distinctRatio': () =>
+  'sphere64.distinctRatio': () => (distinctFull(64).entries / sphere('selective', 64)).toFixed(2),
+  'sphere64.distinctTermsRatio': () =>
     (distinctFull(64).terms / sphere('selective_terms', 64)).toFixed(0),
   'bench.version': () => bench().version,
   'bench.trainMin': () => ms(Math.min(...bench().rows.map((r) => r.train_ms))),
@@ -171,6 +181,10 @@ export const CHECKS: Record<string, () => string> = {
   'power.r': () => pct(classifier().accuracy.power.test_r),
   'mlp.errors': () => int(errors(classifier().confusion.mlp.test_nr)),
   'mlp.sixnine': () => int(mixed(classifier().confusion.mlp.test_nr, 6, 9)),
+  'mlp.nr2': () => pct(classifier().accuracy.mlp.test_nr, 2),
+  'mlp.r2': () => pct(classifier().accuracy.mlp.test_r, 2),
+  'mlp.errorsR': () => int(errors(classifier().confusion.mlp.test_r)),
+  'mlp.sixnineR': () => int(mixed(classifier().confusion.mlp.test_r, 6, 9)),
   'power.sixnine': () => int(mixed(classifier().confusion.power.test_nr, 6, 9)),
   'two.power': () => String(powerOnTwo().digit),
   'two.powerP': () => pct(powerOnTwo().p, 0),

@@ -6,6 +6,7 @@ import { WIDGET_CONFIG } from '../src/math/config';
 import { Invariant } from '../src/math/invariant';
 import { march } from '../src/math/march';
 import { Rng } from '../src/math/rng';
+import { choose } from '../src/worker/select';
 import { evaluateAt, SphereGrid } from '../src/math/sht';
 import {
   DIGIT_PLANE,
@@ -86,11 +87,10 @@ describe('the Earth', () => {
       const x = bandlimit(earthSignal(manifest).x, L);
       const inv = new Invariant(loadTables(), L);
       const res = march(inv, inv.values(x), WIDGET_CONFIG, new Rng(4));
-      const scored = res.branches
-        .map((b) => ({ rel: b.rel, aligned: align(b.x, x, { rng: new Rng(1) }).rel }))
-        .sort((a, b) => a.rel - b.rel || a.aligned - b.aligned);
-      expect(scored[0]?.rel).toBeLessThan(WIDGET_CONFIG.okTol);
-      expect(scored[0]?.aligned).toBeLessThan(1e-6);
+      // Chosen by residual alone, as the figure does; the original only measures the error.
+      const chosen = res.branches[choose(res.branches.map((b) => b.rel))]!;
+      expect(chosen.rel).toBeLessThan(WIDGET_CONFIG.okTol);
+      expect(align(chosen.x, x, { rng: new Rng(1) }).rel).toBeLessThan(1e-6);
     },
   );
 });

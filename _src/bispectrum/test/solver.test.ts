@@ -10,6 +10,9 @@ import { march } from '../src/math/march';
 import { Rng } from '../src/math/rng';
 import { mul3, randomRotation, rotateDofs, transpose3 } from '../src/math/rotation';
 import { SphereGrid } from '../src/math/sht';
+import type { WorkerResponse } from '../src/worker/protocol';
+import { runSolve } from '../src/worker/run';
+import { choose } from '../src/worker/select';
 import { liftToSphere } from '../src/math/smnist';
 import { loadDigits, loadTables, maxAbsDiff, randn, relErr } from './helpers';
 
@@ -94,9 +97,9 @@ describe('degree marching on spherical MNIST', () => {
     expect(degreesSeen).toEqual([4, 5, 6, 7, 8]);
     expect(res.branches.length).toBeGreaterThan(0);
 
-    const scored = res.branches.map((b) => ({ ...b, al: align(b.x, x, { rng: new Rng(2) }) }));
-    scored.sort((a, b) => a.rel - b.rel || a.al.rel - b.al.rel);
-    const best = scored[0]!;
+    // Chosen by residual alone, as the widget does; the original only measures the error.
+    const chosen = res.branches[choose(res.branches.map((b) => b.rel))]!;
+    const best = { ...chosen, al: align(chosen.x, x, { rng: new Rng(2) }) };
     console.log(
       `lmax ${lmax}: ${ms.toFixed(0)} ms, seed starts ${res.seedTried}, ` +
         `branches ${res.branches.length}, feature rel ${best.rel.toExponential(1)}, ` +
@@ -105,5 +108,34 @@ describe('degree marching on spherical MNIST', () => {
     expect(best.rel).toBeLessThan(1e-10);
     expect(best.al.rel).toBeLessThan(1e-6);
     expect(relErr(rotateDofs(best.x, best.al.rot), x)).toBeLessThan(1e-6);
+  });
+
+  it('shows the same reconstruction whatever signal it is aligned to', () => {
+    const lmax = 6;
+    const digits = loadDigits();
+    const grid = new SphereGrid(64, 128, lmax);
+    const lifted = liftToSphere(digits.images[2]!, digits.size, grid.theta, grid.phi);
+    const x = bandlimit(fromHalfSpectrum(grid.analyze(lifted)), lmax);
+    const inv = new Invariant(tables, lmax);
+    const run = (alignTo: Float64Array): Extract<WorkerResponse, { type: 'done' }> => {
+      let done: WorkerResponse | undefined;
+      runSolve(
+        inv,
+        { id: 1, lmax, target: inv.values(x), alignTo, seed: 3, config: WIDGET_CONFIG },
+        (m) => {
+          if (m.type === 'done') done = m;
+        },
+      );
+      if (done?.type !== 'done') throw new Error('no result');
+      return done;
+    };
+    const toSignal = run(x);
+    const toNoise = run(randn(dim(lmax), 99));
+    expect(toSignal.accepted).toBe(true);
+    expect(toNoise.best).toBe(toSignal.best);
+    expect(
+      maxAbsDiff(toNoise.branches[toNoise.best]!.x, toSignal.branches[toSignal.best]!.x),
+    ).toBe(0);
+    expect(toSignal.branches[toSignal.best]!.alignedRel).toBeLessThan(1e-6);
   });
 });

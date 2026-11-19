@@ -3,8 +3,8 @@
  * its first two phases, the phases and power spectrum of its coefficients, the triple products
  * `β(k1, k2)` with `k1 + k2 <= 8`, and the chain walked back.
  *
- * `../math/ring` follows `torch.fft.fft`, where a turn by `α` takes `c_k` to `c_k e^{-ikα}`. The
- * figure shows `φ_k = -arg c_k`, which a turn advances by `kα`, as in the prose.
+ * `../math/ring` follows `torch.fft.fft`, where a turn by `α` takes `c_k` to `c_k e^{-ikα}`, and so
+ * do the figure and the prose: `φ_k = arg c_k` falls by `kα`.
  */
 
 import type { Figure, Mount } from '../figure';
@@ -74,13 +74,13 @@ function curvePath(ctx: CanvasRenderingContext2D, c: Spectrum, cx: number, cy: n
   ctx.closePath();
 }
 
-/** `φ_k`, the phase a turn advances by `kα`. */
-const phase = (c: Spectrum, k: number): number => -Math.atan2(c.im[k]!, c.re[k]!);
+/** `φ_k = arg c_k`, which a turn by `α` lowers by `kα`. */
+const phase = (c: Spectrum, k: number): number => Math.atan2(c.im[k]!, c.re[k]!);
 
 /** The phase of `β(k1, k2)`, `φ_k1 + φ_k2 - φ_{k1 + k2}`. */
 function triplePhase(c: Spectrum, k1: number, k2: number): number {
   const [re, im] = triple(c, k1, k2);
-  return -Math.atan2(im, re);
+  return Math.atan2(im, re);
 }
 
 /**
@@ -185,13 +185,13 @@ class RingFigure implements Figure {
   constructor(host: HTMLElement) {
     this.base = randomCurve(this.rng);
 
-    const signalPanel = panel('Curve', 'drag to turn');
+    const signalPanel = panel('Curve', 'draggable');
     this.signal = new Surface(signalPanel, 'rg-signal', () => this.drawSignal());
     const planePanel = panel('Phases of c₁ and c₂', 'grey: arg β(1, 1) constant');
     this.plane = new Surface(planePanel, 'rg-plane', () => this.drawPlane());
 
     this.alphaSlider = slider({
-      label: 'turn α',
+      label: 'Rotation angle α',
       min: 0,
       max: 359,
       value: 0,
@@ -206,12 +206,12 @@ class RingFigure implements Figure {
       'div',
       { class: 'rw-row' },
       this.alphaSlider.element,
-      button('scramble the phases', () => this.setScrambled(true)),
+      button('scramble phases', () => this.setScrambled(true)),
       button('new curve', () => this.newCurve()),
       button('reset', () => this.reset(), { kind: 'quiet' }),
     );
 
-    const specPanel = panel('Coefficients and triple products', 'click an entry');
+    const specPanel = panel('Coefficients and triple products', 'entries are selectable');
     specPanel.classList.add('rg-spec-panel');
     this.spec = new Surface(specPanel, 'rg-spec', () => this.drawSpec());
     this.spec.canvas.addEventListener('click', (e) => this.onCellClick(e));
@@ -224,7 +224,7 @@ class RingFigure implements Figure {
     specPanel.append(this.entryText);
 
     this.stepsSlider = slider({
-      label: 'chain entries used',
+      label: 'Coefficient recovery',
       min: 0,
       max: K + 1,
       value: 0,
@@ -232,7 +232,7 @@ class RingFigure implements Figure {
       onInput: (v) => this.stepTo(v),
     });
     this.freeSlider = slider({
-      label: 'free phase φ₁',
+      label: 'Free phase φ₁',
       min: 0,
       max: 359,
       value: 0,
@@ -273,8 +273,7 @@ class RingFigure implements Figure {
   /** Coefficients recovered from the first `steps` chain entries, at the free phase. */
   private get rebuilt(): Spectrum | null {
     if (!this.steps) return null;
-    // `invertChain` takes `arg c_1`, the opposite of the figure's phase.
-    const known = copy(invertChain(chain(this.current), -this.free));
+    const known = copy(invertChain(chain(this.current), this.free));
     for (let k = this.steps; k <= K; k++) known.re[k] = known.im[k] = 0;
     return known;
   }
@@ -300,20 +299,22 @@ class RingFigure implements Figure {
     const ph = deg(triplePhase(this.current, k1, k2));
     return (
       `β(${k1}, ${k2}) = c${sub(k1)} c${sub(k2)} c̄${sub(k3)}. Its phase is ` +
-      `φ${sub(k1)} + φ${sub(k2)} − φ${sub(k3)} = ${ph}°, and a turn by α adds ` +
-      `(${k1} + ${k2} − ${k3})α = 0.`
+      `φ${sub(k1)} + φ${sub(k2)} − φ${sub(k3)} = ${ph}°, and a turn by α changes it by ` +
+      `−(${k1} + ${k2} − ${k3})α = 0.`
     );
   }
 
   private chainLine(): string {
     const s = this.steps;
-    if (s === 0) return `The chain is the ${K + 1} outlined entries. None used yet.`;
+    if (s === 0) return `The ${K + 1} outlined entries determine the curve. None used yet.`;
     if (s === 1) return 'β(0, 0) = c₀³ gives c₀, the mean radius.';
-    if (s === 2) return 'β(0, 1) = c₀ |c₁|² gives |c₁|. No entry contains φ₁, so it is free.';
+    if (s === 2) {
+      return 'β(0, 1) = c₀ |c₁|² gives |c₁|. No entry fixes φ₁, and choosing it sets the orientation.';
+    }
     const k = s - 2;
     const line =
       `β(1, ${k}) = c₁ c${sub(k)} c̄${sub(k + 1)} gives ` +
-      `c${sub(k + 1)} = conj(β(1, ${k}) / (c₁ c${sub(k)})).`;
+      `c${sub(k + 1)} = conj(β(1, ${k}) / (c₁ c${sub(k)})), which needs c₁ c${sub(k)} ≠ 0.`;
     return s <= K
       ? line
       : `${line} All ${K + 1} coefficients are recovered up to φ₁, and every value of φ₁ ` +
@@ -508,7 +509,7 @@ class RingFigure implements Figure {
     ctx.font = SANS;
     ctx.textAlign = 'left';
     ctx.textBaseline = 'top';
-    if (rb) ctx.fillText('orange: rebuilt from the chain', 4, 4);
+    if (rb) ctx.fillText('orange: rebuilt from the outlined entries', 4, 4);
     else if (this.scrambled) ctx.fillText('dashed: before the scramble', 4, 4);
   }
 
@@ -693,7 +694,7 @@ class RingFigure implements Figure {
     ctx.textAlign = 'left';
     ctx.textBaseline = 'alphabetic';
     ctx.fillText(
-      `outlined: the chain, ${K + 1} entries · orange rim: used so far`,
+      `outlined: the ${K + 1} recovery entries · orange rim: used so far`,
       L.gutter,
       L.height - 6,
     );

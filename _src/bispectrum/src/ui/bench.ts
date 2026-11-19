@@ -54,7 +54,7 @@ export function benchTable(bench: Bench): HTMLElement {
         head('Module', { rowspan: '2' }),
         head('Benchmarked on', { rowspan: '2' }),
         head('Output size', { colspan: '2', class: 'group start' }),
-        head('Training, ms', { colspan: '2', class: 'group start' }),
+        head('Forward with autograd, ms', { colspan: '2', class: 'group start' }),
         head('Inference, ms', { colspan: '1', class: 'group start' }),
       ),
       el(
