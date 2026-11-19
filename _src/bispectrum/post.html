@@ -49,17 +49,17 @@
           <a href="https://github.com/geometric-intelligence/bispectrum">Code</a>
         </p>
         <p class="lede">
-          We trained the three classifiers below on upright digits. For instance, if we rotate the
-          2, the planar CNN's prediction changes with its orientation. The power-spectrum
-          classifier consistently calls it a <span data-check="two.power">3</span>, while the
-          bispectrum classifier keeps recognizing it as a 2.
-        </p>
-        <p class="lede">
-          The power spectrum tells us how much energy the digit has at each spatial frequency. Two
-          different shapes can have the same energy at every frequency. The bispectrum also
-          measures relationships between frequencies, and those relationships can tell the shapes
-          apart. We built <code>bispectrum</code>, a PyTorch library that computes these features
-          for seven group actions.
+          We built <code>bispectrum</code>, a PyTorch library that turns signals into features with
+          built-in invariance to a chosen symmetry. It uses the \(G\)-bispectrum to capture
+          relationships across frequencies that survive transformations such as rotations or
+          translations. A selective algorithm and GPU optimizations keep it cheap, and the result
+          trades a little accuracy for a lot of speed while keeping completeness guarantees. On
+          rotated Spherical MNIST our model reaches
+          <span data-check="smnist.ours.acc">95.8%</span>, 0.3 points behind a spherical CNN and an
+          e3nn tensor-product network, with <span data-check="smnist.vsS2">4</span> and
+          <span data-check="smnist.vsTp">364</span> times lower latency on a modern GPU. Its
+          features are provably complete for generic signals on the library's finite groups and on
+          the disk, and conjectured complete on the sphere.
         </p>
       </div>
     </header>
