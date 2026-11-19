@@ -204,25 +204,28 @@
         <p>
           Let's write \(g \cdot x\) for a signal \(x\) transformed by an element \(g\) of a group
           \(G\). We call \(g\) the signal's <dfn>pose</dfn>, and the set of all its transformed
-          copies its <dfn>orbit</dfn>. A map \(\Phi\) is invariant if it is constant on orbits, and
-          <dfn>complete</dfn> if it also tells orbits apart,
+          copies its <dfn>orbit</dfn>. A map \(\beta\) is invariant if it is constant on orbits,
+          and <dfn>complete</dfn> if it also tells orbits apart,
         </p>
-        <p>\[ \Phi(x) = \Phi(y) \iff y = g \cdot x \text{ for some } g \in G. \]</p>
+        <p>\[ \beta(x) = \beta(y) \iff y = g \cdot x \text{ for some } g \in G. \]</p>
         <p>
           An invariant has to forget the pose, and a complete one forgets nothing else. Following
-          the paper, we call \(\Phi(x)\) the signal's <dfn>invariant descriptor</dfn>.
+          the paper, we call \(\beta(x)\) the signal's <dfn>invariant descriptor</dfn>.
         </p>
       </section>
       <figure class="l-body art-figure">
         <div class="orbits">
           <div data-art="orbit-x"></div>
-          <p><b>Invariant.</b> Every pose of the 2 maps to the same features.</p>
+          <p><b>Invariant.</b> Every pose of the 2, \(x\), maps to the same features.</p>
           <div data-art="orbit-y"></div>
-          <p><b>Complete.</b> A 7, in any pose, maps to different ones.</p>
+          <p>
+            <b>Complete.</b> Every pose of the 7, \(y\), maps to one vector too, and it differs
+            from the 2's.
+          </p>
         </div>
         <figcaption>
-          Six poses of each digit around its orbit (dashed), and the features \(\beta\) that all
-          six share.
+          Six turns of each digit, one slice of its orbit (dashed), and the features \(\beta\) that
+          all six share.
         </figcaption>
       </figure>
       <section class="l-body">
