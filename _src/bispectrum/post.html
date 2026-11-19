@@ -273,11 +273,24 @@
         <p>
           The phase of \(\beta_{k_1, k_2}\) is \(\varphi_{k_1} + \varphi_{k_2} - \varphi_{k_1 +
           k_2}\), a relation between three phases that a rotation preserves and a scramble breaks.
-          The table of all \(\beta_{k_1, k_2}\) is the <dfn>bispectrum</dfn>, named for its two
-          frequency indices. It is the Fourier transform, over two lags, of the triple correlation
-          \(\int r(\theta)\, r(\theta + s_1)\, r(\theta + s_2)\, d\theta\), and on the ring each
-          entry is a triple product (Tukey, 1953). Its row \(k_1 = 0\) is \(c_0 |c_k|^2\), so it
-          gives the power spectrum whenever \(c_0 \neq 0\).
+          These products are the entries of the <dfn>bispectrum</dfn>, named for its two frequency
+          indices. It is defined from the triple correlation of the curve, the average product of
+          its radius at three angles,
+        </p>
+        <p>
+          \[ T(s_1, s_2) = \frac{1}{2\pi} \int_0^{2\pi} r(\theta)\, r(\theta + s_1)\, r(\theta +
+          s_2)\, d\theta, \]
+        </p>
+        <p>as the Fourier transform of \(T\) over both lags,</p>
+        <p>
+          \[ \beta_{k_1, k_2} = \frac{1}{4\pi^2} \int_0^{2\pi} \!\! \int_0^{2\pi} T(s_1, s_2)\,
+          e^{-i(k_1 s_1 + k_2 s_2)}\, ds_1\, ds_2 = c_{k_1}\, c_{k_2}\, \overline{c_{k_1 + k_2}}.
+          \]
+        </p>
+        <p>
+          For a real curve every entry is therefore the triple product above (Tukey, 1953). The row
+          \(k_1 = 0\) is \(c_0 |c_k|^2\), so the bispectrum gives the power spectrum whenever \(c_0
+          \neq 0\).
         </p>
         <p>
           A few entries are enough to rebuild the curve. The first two, \(\beta_{0,0} = c_0^3\) and
