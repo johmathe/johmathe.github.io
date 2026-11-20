@@ -406,12 +406,35 @@ details.foldout {
 }
 
 details.foldout > summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  column-gap: 10px;
+  list-style: none;
   cursor: pointer;
   font-weight: 600;
 }
 
-details.foldout > summary::marker {
+details.foldout > summary::-webkit-details-marker {
+  display: none;
+}
+
+details.foldout > summary::before {
+  content: '▸';
+  display: inline-block;
   color: var(--ash);
+  transition: transform 0.15s;
+}
+
+details.foldout[open] > summary::before {
+  transform: rotate(90deg);
+}
+
+/* The kicker comes first in the markup for screen readers, and sits at the right of the line. */
+details.foldout > summary > .foldout-kicker {
+  order: 1;
+  margin: 0 0 0 auto;
+  white-space: nowrap;
 }
 
 details.foldout[open] > summary {

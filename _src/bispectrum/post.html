@@ -927,11 +927,13 @@
         <h2>Using the library</h2>
       </section>
       <section class="l-body">
+        <p>To install the library, simply run:</p>
+        <pre><code>pip install bispectrum</code></pre>
         <p>
-          <code>pip install bispectrum</code> gets the library. Each group action is one
-          <code>torch.nn.Module</code> without weights, named <code>{Group}on{Domain}</code>, that
-          returns the selective bispectrum of a batch of signals. Here is the sphere module of the
-          experiment above, checking that a rotation leaves its output unchanged.
+          Each group action is one <code>torch.nn.Module</code> without weights, named
+          <code>{Group}on{Domain}</code>, that returns the selective bispectrum of a batch of
+          signals. Here is the sphere module of the experiment above, checking that a rotation
+          leaves its output unchanged:
         </p>
         <pre data-snippet="rotation"><code><span class="k">import</span> torch
 <span class="k">import</span> torch.nn.functional <span class="k">as</span> F
@@ -971,10 +973,10 @@ print(err)  <span class="c"># a few percent, the grid's resampling error</span><
           are welcome.
         </p>
         <p>
-          The largest open question is on the sphere. For a single real band-limited signal, does
-          the augmented selective spherical bispectrum determine almost every signal up to
-          rotation? The count, the per-degree Jacobians, the parity entry and the 32
-          reconstructions are all consistent with it, and none of them is a proof.
+          One question remains open. We conjecture that on the sphere, too, the selective
+          bispectrum pins down almost every band-limited signal up to a rotation. Every test we ran
+          agrees, but the proof is still missing. If you find one, or a counterexample, we would
+          love to hear about it.
         </p>
         <p class="get-it">
           <code>pip install bispectrum</code> ·

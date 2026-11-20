@@ -39,6 +39,10 @@ jobs:
         run: |
           rsync -a --exclude _src --exclude .github --exclude .git --exclude _site ./ _site/
           cp -r _src/bispectrum/dist _site/bispectrum
+          # The short post is the landing page. post.html stays for old links, and the long
+          # version moves to long.html.
+          mv _site/bispectrum/index.html _site/bispectrum/long.html
+          cp _site/bispectrum/post.html _site/bispectrum/index.html
 
       - uses: actions/upload-pages-artifact@v5
         with:
