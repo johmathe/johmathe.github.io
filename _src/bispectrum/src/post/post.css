@@ -24,6 +24,21 @@
   margin-top: 14px;
 }
 
+.chapter-callout {
+  margin: 14px 0 6px;
+  padding: 10px 16px;
+  border-left: 3px solid var(--orange);
+  border-radius: 0 6px 6px 0;
+  background: var(--panel);
+  font-size: 16px;
+  line-height: 1.5;
+  color: var(--graphite);
+}
+
+.chapter-head:has(.chapter-callout) + section > h3:first-child {
+  margin-top: 20px;
+}
+
 /* ------------------------------------------------------------------ classifier */
 
 /* The digit spins from the start, so the turn, spin and scramble buttons have nothing to add. */
@@ -75,6 +90,14 @@
 .art-figure {
   margin-top: 36px;
   margin-bottom: 36px;
+}
+
+section:has(> details.foldout:last-child) + figure {
+  margin-top: 48px;
+}
+
+details.foldout + details.foldout {
+  margin-top: 12px;
 }
 
 .cards {
@@ -329,5 +352,113 @@
   .rs-row {
     grid-template-columns: minmax(0, 1.3fr) 44px minmax(0, 1fr) 52px;
     gap: 8px;
+  }
+}
+
+/* ------------------------------------------------------------------ shift figure */
+
+.wv .wv-stage {
+  padding: 10px 12px;
+}
+
+.wv-signal {
+  display: block;
+  width: 100%;
+  height: 120px;
+  cursor: grab;
+  touch-action: none;
+}
+
+.wv-signal.dragging {
+  cursor: grabbing;
+}
+
+.wv-split {
+  display: grid;
+  grid-template-columns: 1.25fr 1fr;
+  gap: 16px;
+  margin-top: 8px;
+}
+
+.wv-harm,
+.wv-beta {
+  display: block;
+  width: 100%;
+  height: 136px;
+}
+
+.wv-beta {
+  cursor: pointer;
+}
+
+.wv .rw-slider input {
+  width: 130px;
+}
+
+.wv .wv-bar {
+  margin-top: 8px;
+  margin-bottom: 0;
+}
+
+.wv .wv-buttons {
+  gap: 8px;
+}
+
+@media (max-width: 580px) {
+  .wv-split {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+}
+
+/* ------------------------------------------------------------------ sphere reconstruction */
+
+.hr .hr-picker {
+  margin-bottom: 12px;
+}
+
+.hr .rw-padbox {
+  z-index: 1;
+}
+
+/* ------------------------------------------------------------------ cost figure, two charts */
+
+.wl-pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.wl-pair .wl-title {
+  margin: 0;
+  font-size: 14px;
+}
+
+.wl-pair .rw-controls {
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  margin-bottom: 8px;
+}
+
+.wl-pair [data-tab='image'] .rw-legend {
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.wl-pair .rw-slider input {
+  width: 110px;
+}
+
+.wl-pair .wl-chart {
+  height: 240px;
+}
+
+.wl-pair .wl-readout {
+  font-size: 13px;
+}
+
+@media (max-width: 640px) {
+  .wl-pair {
+    grid-template-columns: 1fr;
   }
 }

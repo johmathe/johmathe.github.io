@@ -37,6 +37,11 @@ type Tab = 'image' | 'sphere';
 
 const isTab = (t: string | undefined): t is Tab => t === 'image' || t === 'sphere';
 
+const TAB_TITLE: Record<Tab, string> = {
+  image: 'An image, under shifts',
+  sphere: 'A sphere, under rotations',
+};
+
 /** The tab each step of the talk deck shows. */
 const STEP_TAB: Partial<Record<string, Tab>> = { small: 'image', big: 'image', sphere: 'sphere' };
 
@@ -85,6 +90,8 @@ class WallFigure implements Figure {
   private readonly readout: HTMLElement;
   /** Set by `data-tab` on the host: the figure shows that tab only, and ignores the other's steps. */
   private readonly pinned: Tab | null;
+  /** Set by `data-static` on the host: draws the curves alone, with no slider, cursor or readout. */
+  private readonly staticView: boolean;
   /** Set by `data-deck` on the host: the talk deck counts invariants, not numbers. */
   private readonly unit: string;
 
@@ -94,14 +101,15 @@ class WallFigure implements Figure {
   ) {
     const tab = host.dataset.tab;
     this.pinned = isTab(tab) ? tab : null;
+    this.staticView = 'static' in host.dataset;
     this.tab = this.pinned ?? this.tab;
     this.unit = host.dataset.deck === undefined ? 'numbers' : 'invariants';
     const root = el('div', { class: 'rw wl' });
     this.tabs = segmented(
       'Signal',
       [
-        { value: 'image', label: 'an image, under shifts' },
-        { value: 'sphere', label: 'a sphere, under rotations' },
+        { value: 'image', label: TAB_TITLE.image.toLowerCase() },
+        { value: 'sphere', label: TAB_TITLE.sphere.toLowerCase() },
       ],
       this.tab,
       (t) => this.setTab(t),
@@ -138,12 +146,13 @@ class WallFigure implements Figure {
       el(
         'div',
         { class: 'rw-controls' },
-        this.tabs.element,
-        this.sideSlider.element,
-        this.lSlider.element,
+        this.pinned
+          ? el('h4', { class: 'wl-title', text: TAB_TITLE[this.pinned] })
+          : this.tabs.element,
+        ...(this.staticView ? [] : [this.sideSlider.element, this.lSlider.element]),
       ),
       panel,
-      this.readout,
+      ...(this.staticView ? [] : [this.readout]),
     );
     host.replaceChildren(root);
     this.setTab(this.tab);
@@ -351,12 +360,14 @@ class WallFigure implements Figure {
     }
 
     const cur = this.tab === 'image' ? this.side : this.L;
-    const cx = Math.round(fx(cur)) + 0.5;
-    ctx.strokeStyle = MUTED;
-    ctx.beginPath();
-    ctx.moveTo(cx, pad.t);
-    ctx.lineTo(cx, pad.t + ph);
-    ctx.stroke();
+    if (!this.staticView) {
+      const cx = Math.round(fx(cur)) + 0.5;
+      ctx.strokeStyle = MUTED;
+      ctx.beginPath();
+      ctx.moveTo(cx, pad.t);
+      ctx.lineTo(cx, pad.t + ph);
+      ctx.stroke();
+    }
 
     for (const s of m.series) {
       ctx.beginPath();
@@ -370,10 +381,12 @@ class WallFigure implements Figure {
       ctx.lineJoin = 'round';
       ctx.stroke();
       ctx.setLineDash([]);
-      ctx.beginPath();
-      ctx.arc(fx(cur), fy(s.y(cur)), 3.5, 0, 2 * Math.PI);
-      ctx.fillStyle = s.color;
-      ctx.fill();
+      if (!this.staticView) {
+        ctx.beginPath();
+        ctx.arc(fx(cur), fy(s.y(cur)), 3.5, 0, 2 * Math.PI);
+        ctx.fillStyle = s.color;
+        ctx.fill();
+      }
     }
   }
 }

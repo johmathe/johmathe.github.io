@@ -46,6 +46,7 @@ import {
   type StripGroup,
   type StripLayout,
 } from './strips';
+import { say } from './vocab';
 
 export interface WidgetAssets {
   tables: InvariantTables;
@@ -54,6 +55,8 @@ export interface WidgetAssets {
 }
 
 type Mode = 'fast' | 'thorough';
+
+const fromInvariants = (): string => say('from the descriptor alone', 'from the invariants alone');
 /**
  * `playground` keeps what it takes to try a signal of one's own: the picker, the two spheres, the
  * descriptor and the button. The rest of the widget still runs, off the page.
@@ -291,10 +294,13 @@ export class ReconWidget {
     this.alignToggle = toggle('align to signal', true, (on) => this.setAlign(on));
     this.candidateButton = button('candidate', () => this.nextCandidate(), {
       kind: 'quiet',
-      title: 'Another signal with the same descriptor',
+      title: say(
+        'Another signal with the same descriptor',
+        'Another signal with the same invariants',
+      ),
     });
     this.candidateButton.hidden = true;
-    this.reconNote = el('span', { class: 'rw-hint', text: 'from the descriptor alone' });
+    this.reconNote = el('span', { class: 'rw-hint', text: fromInvariants() });
     const reconPanel = el(
       'div',
       { class: 'rw-panel' },
@@ -343,16 +349,16 @@ export class ReconWidget {
       (['triple', 'energy'] as EntryKind[]).map((k) => ['bar', KIND_COLORS[k], KIND_LABELS[k]]),
     );
     this.mapLegend = legend([
-      ['cell kept', '', 'kept in the descriptor'],
+      ['cell kept', '', say('kept in the descriptor', 'kept among the invariants')],
       ['cell', '', 'the rest'],
       ['pending', '', 'not rebuilt yet'],
     ]);
     this.mapLegend.hidden = true;
     this.map.element.hidden = true;
     this.viewSwitch = segmented<InvView>(
-      'Descriptor view',
+      say('Descriptor view', 'Invariants view'),
       [
-        { value: 'bars', label: 'bars', title: 'Descriptor as bars' },
+        { value: 'bars', label: 'bars', title: say('Descriptor as bars', 'Invariants as bars') },
         {
           value: 'map',
           label: '2D',
@@ -624,12 +630,12 @@ export class ReconWidget {
   private renderInvTitle(): void {
     const inv = this.invariant(this.lmax);
     if (this.invView === 'bars') {
-      this.invTitle.textContent = `Descriptor: ${inv.n} numbers for ${dim(this.lmax)} coefficients, grouped by the degree they pin down`;
+      this.invTitle.textContent = `${say('Descriptor', 'Invariants')}: ${inv.n} numbers for ${dim(this.lmax)} coefficients, grouped by the degree they pin down`;
       return;
     }
     const powers = inv.isPower.reduce((s, p) => s + p, 0);
     const full = this.bispectrum(this.lmax);
-    this.invTitle.textContent = `All ${full.n} triple products, one panel per degree ℓ (ℓ₁ down, ℓ₂ across). The descriptor keeps the ${inv.n - powers} outlined, plus ${powers} product energies`;
+    this.invTitle.textContent = `All ${full.n} triple products, one panel per degree ℓ (ℓ₁ down, ℓ₂ across). ${say('The descriptor keeps', 'The invariants are')} the ${inv.n - powers} outlined, plus ${powers} product energies`;
   }
 
   private setInvView(view: InvView): void {
@@ -661,7 +667,9 @@ export class ReconWidget {
         const [a, b, c] = full.triples[e]!;
         const parts = [
           `triple product of degrees ${a}, ${b}, ${c}${full.imagPart[e] ? ' (imaginary part)' : ''}`,
-          kept.has(e) ? 'kept in the descriptor' : 'not in the descriptor',
+          kept.has(e)
+            ? say('kept in the descriptor', 'kept among the invariants')
+            : say('not in the descriptor', 'not among the invariants'),
         ];
         if (power.has(e)) parts.push(`its product energy is kept`);
         if (full.vanishes[e]) parts.push('zero on every real signal');
@@ -704,7 +712,7 @@ export class ReconWidget {
     this.degreeSlider.input.disabled = true;
     this.replayButton.disabled = true;
     this.runButton.textContent = 'Reconstruct';
-    this.reconNote.textContent = 'from the descriptor alone';
+    this.reconNote.textContent = fromInvariants();
     this.showSnapshot();
     this.status.textContent = message;
   }
@@ -848,13 +856,15 @@ export class ReconWidget {
         const n = s.reps.length;
         const which =
           n > 1
-            ? ` ${n} distinct signals match the descriptor. Candidate ${s.candidate + 1}, ranked by descriptor mismatch alone.`
+            ? ` ${n} distinct signals match the ${say('descriptor', 'invariants')}. Candidate ${s.candidate + 1}, ranked by ${say('descriptor', 'invariant')} mismatch alone.`
             : '';
         const far =
           chosen && chosen.alignedRel > COLLISION_REL
-            ? ' This candidate is not a rotation of the signal, so it is a second signal with the same descriptor. If it reproduces, please tell us.'
+            ? ' This candidate is not a rotation of the signal, so it is a second signal with the same ' +
+              say('descriptor', 'invariants') +
+              '. If it reproduces, please tell us.'
             : '';
-        text = `Recovered ${dim(s.lmax)} coefficients from the ${this.invariant(s.lmax).n} numbers of the descriptor in ${secs(s.ms)} (${plural(s.seedTried, 'random start')}). Descriptor mismatch ${sci(chosen?.featureRel ?? NaN)}.${err}${which}${far}`;
+        text = `Recovered ${dim(s.lmax)} coefficients from ${say(`the ${this.invariant(s.lmax).n} numbers of the descriptor`, `${this.invariant(s.lmax).n} invariants`)} in ${secs(s.ms)} (${plural(s.seedTried, 'random start')}). ${say('Descriptor', 'Invariant')} mismatch ${sci(chosen?.featureRel ?? NaN)}.${err}${which}${far}`;
         break;
       }
       case 'stopped':
@@ -862,7 +872,7 @@ export class ReconWidget {
         break;
       case 'failed':
         text = chosen
-          ? `Missed the tolerance: the closest candidate matches the descriptor to ${sci(chosen.featureRel)}, against ${sci(s.config.okTol)} required. ${RETRY_HINT}`
+          ? `Missed the tolerance: the closest candidate matches the ${say('descriptor', 'invariants')} to ${sci(chosen.featureRel)}, against ${sci(s.config.okTol)} required. ${RETRY_HINT}`
           : s.seedFound === 0
             ? `No consistent guess in ${s.seedTried} random starts. ${RETRY_HINT}`
             : `No candidate survived degree ${last}. ${RETRY_HINT}`;
@@ -956,7 +966,7 @@ export class ReconWidget {
     this.recon.setSignal(b.x, this.vmax);
     const d = this.shownDegree!;
     const lmax = this.solve!.lmax;
-    this.reconNote.textContent = d < lmax ? `degrees ℓ ≤ ${d}` : 'from the descriptor alone';
+    this.reconNote.textContent = d < lmax ? `degrees ℓ ≤ ${d}` : fromInvariants();
     // Mark the degree just solved, or the one scrubbed to; nothing once the march is complete.
     const highlight = d < lmax || this.solve!.phase === 'marching' ? d : null;
     this.invStrip.setValues({ dots: this.invariant(lmax).values(b.x), dotsUpTo: d, highlight });

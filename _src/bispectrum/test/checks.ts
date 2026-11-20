@@ -22,6 +22,12 @@ const invariant = (): InvariantManifest => loadDataJson<InvariantManifest>('inva
 const classifier = (): ClassifierManifest => loadDataJson<ClassifierManifest>('classifier.json');
 const bench = (): Bench => loadDataJson<Bench>('bench.json');
 
+/** How many times longer the full bispectrum takes than the selective one, both with autograd. */
+const fullSpeedup = (module: string): string => {
+  const r = bench().rows.find((row) => row.module === module)!;
+  return (r.full_ms! / r.train_ms).toFixed(0);
+};
+
 const sphere = (key: keyof SphereCounts, L: number): number =>
   loadDataJson<Counts>('counts.json').sphere[key][L - 1]!;
 
@@ -153,6 +159,8 @@ export const CHECKS: Record<string, () => string> = {
   'sphere15.cubic': () => entries(15, 'triples'),
   'sphere15.quartic': () => entries(15, 'energies'),
   'sphere15.channels': () => int(2 * sphere('selective', 15)),
+  'sphere15.power': () => int(15 + 1),
+  'sphere15.lower': () => int(sphere('coefficients', 15) - 3),
   'sphere64.full': () => int(sphere('full', 64)),
   'sphere64.sel': () => int(sphere('selective', 64)),
   'sphere64.fullTerms': () => `${Math.round(sphere('full_terms', 64) / 1e6)} million`,
@@ -173,6 +181,8 @@ export const CHECKS: Record<string, () => string> = {
   'bench.infMax': () => ms(Math.max(...bench().rows.map((r) => r.inference_ms))),
   'bench.selMin': () => int(Math.min(...bench().rows.map((r) => r.selective))),
   'bench.selMax': () => int(Math.max(...bench().rows.map((r) => r.selective))),
+  'bench.ringSpeedup': () => fullSpeedup('CnonCn'),
+  'bench.torusSpeedup': () => fullSpeedup('TorusOnTorus'),
   'mlp.nr': () => pct(classifier().accuracy.mlp.test_nr),
   'mlp.r': () => pct(classifier().accuracy.mlp.test_r),
   'cnn.nr': () => pct(classifier().accuracy.cnn.test_nr),

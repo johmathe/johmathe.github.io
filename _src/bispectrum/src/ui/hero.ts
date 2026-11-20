@@ -1,6 +1,7 @@
 import { sharedAssets } from '../assets';
+import type { DigitSet } from '../data';
 import type { Mount } from '../figure';
-import { degreePower, dim, toHalfSpectrum } from '../math/basis';
+import { bandlimit, degreePower, dim, toHalfSpectrum } from '../math/basis';
 import { WIDGET_CONFIG } from '../math/config';
 import { Invariant, type InvariantTables } from '../math/invariant';
 import { Rng } from '../math/rng';
@@ -16,22 +17,29 @@ import {
   type Mat3,
 } from '../math/rotation';
 import { SphereGrid } from '../math/sht';
-import { EARTH_VIEW, facing, loadEarth, worldMap, type Signal } from '../signals';
+import { digitSignal, EARTH_VIEW, facing, loadEarth, worldMap, type Signal } from '../signals';
 import { SolverClient, type SolveEvent } from '../worker/client';
 import type { FinalBranch } from '../worker/protocol';
 import { reducedMotion } from './canvas';
 import { greyAt, inkAt } from './colormap';
-import { button, el, toggle } from './controls';
+import { button, DigitPicker, el, toggle, type Pick } from './controls';
 import { CellGrid } from './cells';
+import { DrawPad } from './drawpad';
 import { FlatView } from './flat';
 import { SphereView } from './sphere';
 
 export interface HeroAssets {
   tables: InvariantTables;
   earth: Signal;
+  /** With `data-picker` on the root: digits to pick from, beside the Earth and a draw pad. */
+  digits?: DigitSet;
 }
 
 const DISPLAY = { nlat: 96, nlon: 192 };
+/** The dataset grid of `experiments/spherical_mnist`, which digits and drawings are lifted on. */
+const ANALYSIS = { nlat: 64, nlon: 128 };
+/** Digits and drawings run at the widget's band-limit, where the solver is checked on them. */
+const DIGIT_L = 12;
 /** The world map under the globe in the talk deck: one pixel per degree. */
 const MAP = { width: 360, height: 180 };
 /** Radians per second. */
@@ -73,17 +81,33 @@ interface Candidates {
  * beneath it.
  */
 export class HeroFigure {
-  private readonly lmax: number;
-  private readonly invariant: Invariant;
-  private readonly x: Float64Array;
-  private readonly vmax: number;
+  private lmax: number;
+  private invariant: Invariant;
+  private x: Float64Array;
+  private vmax = 1;
+  private readonly tables: InvariantTables;
+  private readonly invariants = new Map<number, Invariant>();
+  private readonly grid: SphereGrid;
   private readonly solver: SolverClient;
   private readonly rng = new Rng(20261109);
 
   private readonly earth: SphereView;
   private readonly mush: SphereView;
   private readonly redrawn: SphereView;
-  private readonly cells: { all: CellGrid; power: CellGrid; descriptor: CellGrid };
+  private cells!: { all: CellGrid; power: CellGrid; descriptor: CellGrid };
+  private readonly cellHosts = { all: el('div'), power: el('div'), descriptor: el('div') };
+  private readonly counts = { all: el('span'), power: el('span'), descriptor: el('span') };
+  private readonly allWhat = el('p', { class: 'hr-what' });
+  private readonly descriptorWhat = el('p', { class: 'hr-what' });
+  private readonly title = el('h4', { text: 'Earth, roughly' });
+  private readonly root: HTMLElement;
+  private readonly earthSignal: Signal;
+  private readonly digits: DigitSet | null;
+  private analysis: SphereGrid | null = null;
+  private pad: DrawPad | null = null;
+  private picker: DigitPicker | null = null;
+  private pick: Pick = 'earth';
+  private lastDigit = 0;
   private readonly spinToggle: ReturnType<typeof toggle>;
   private readonly lineButton: HTMLButtonElement;
   private readonly againButton: HTMLButtonElement;
@@ -112,37 +136,17 @@ export class HeroFigure {
 
   constructor(root: HTMLElement, assets: HeroAssets) {
     const { earth, tables } = assets;
+    this.root = root;
+    this.tables = tables;
+    this.earthSignal = earth;
+    this.digits = root.dataset.picker !== undefined ? (assets.digits ?? null) : null;
     this.x = earth.x;
     this.lmax = Math.round(Math.sqrt(this.x.length)) - 1;
-    this.invariant = new Invariant(tables, this.lmax);
+    this.invariant = this.invariantAt(this.lmax);
     this.solver = new SolverClient(tables);
-    const grid = new SphereGrid(DISPLAY.nlat, DISPLAY.nlon, this.lmax, 'centered');
-    this.vmax =
-      grid
-        .synthesize(toHalfSpectrum(this.x, this.lmax))
-        .reduce((m, v) => Math.max(m, Math.abs(v)), 0) || 1;
-
+    this.grid = new SphereGrid(DISPLAY.nlat, DISPLAY.nlon, this.lmax, 'centered');
+    const grid = this.grid;
     const n = dim(this.lmax);
-    // The same cells per row in every list, so that a list's area is its length.
-    const cols = 2 * (this.lmax + 1);
-    const list = (count: number, color?: (t: number) => string): CellGrid => {
-      const f = new CellGrid(count, {
-        cols,
-        cls: 'hr-cells',
-        label: `${count} numbers as colored cells`,
-        ...(color ? { color } : {}),
-      });
-      f.element.style.width = `${(100 * Math.min(count, cols)) / cols}%`;
-      return f;
-    };
-    this.cells = {
-      all: list(n, greyAt),
-      power: list(this.lmax + 1, inkAt),
-      descriptor: list(this.invariant.n),
-    };
-    this.cells.all.setReference(this.x);
-    this.cells.power.setReference(degreePower(this.x, this.lmax));
-    this.cells.descriptor.setReference(this.invariant.values(this.x));
 
     const deck = root.dataset.deck !== undefined;
     root.classList.add('rw', 'hr');
@@ -166,19 +170,21 @@ export class HeroFigure {
     this.candidateButton.hidden = true;
     this.status = el('div', { class: 'hr-status', attrs: { 'aria-live': 'polite' } });
 
-    const lead = (name: string, count: number, noun: string, what: string): HTMLElement =>
+    const lead = (
+      name: string,
+      count: HTMLElement,
+      noun: string,
+      what: HTMLElement,
+    ): HTMLElement =>
       el(
         'div',
         { class: 'hr-lead' },
         ...(deck ? [el('p', { class: 'hr-name', text: name })] : []),
-        el(
-          'div',
-          { class: 'hr-head' },
-          el('span', { class: 'hr-count', text: String(count) }),
-          el('span', { class: 'hr-noun', text: noun }),
-        ),
-        el('p', { class: 'hr-what', text: what }),
+        el('div', { class: 'hr-head' }, count, el('span', { class: 'hr-noun', text: noun })),
+        what,
       );
+    for (const c of Object.values(this.counts)) c.className = 'hr-count';
+    for (const h of Object.values(this.cellHosts)) h.className = 'hr-cell-host';
     const redraw = (host: HTMLElement, title: string, ...controls: HTMLElement[]): HTMLElement =>
       el(
         'div',
@@ -187,6 +193,13 @@ export class HeroFigure {
         el('div', { text: title }),
         el('div', { class: 'rw-row' }, ...controls),
       );
+
+    const padBox = this.digits ? this.makePad(this.digits) : null;
+    if (this.digits) {
+      this.picker = new DigitPicker(this.digits, 10, (p) => this.choose(p), { earth: true });
+      this.picker.setActive(this.pick);
+      root.append(el('div', { class: 'rw-controls hr-picker' }, this.picker.element));
+    }
 
     root.append(
       el(
@@ -198,10 +211,10 @@ export class HeroFigure {
           el(
             'div',
             { class: 'rw-panel-head' },
-            el('h4', { text: 'Earth, roughly' }),
+            this.title,
             el('span', { class: 'rw-hint', text: 'drag to turn it' }),
           ),
-          earthHost,
+          padBox ? el('div', { class: 'rw-sphere-wrap' }, earthHost, padBox) : earthHost,
           ...(deck ? [this.map(n)] : []),
           el(
             'div',
@@ -212,13 +225,8 @@ export class HeroFigure {
           el(
             'div',
             { class: 'hr-list' },
-            lead(
-              'Coefficients',
-              n,
-              'coefficients',
-              'The globe in spherical harmonics. Turn it and they change.',
-            ),
-            this.cells.all.element,
+            lead('Coefficients', this.counts.all, 'coefficients', this.allWhat),
+            this.cellHosts.all,
           ),
         ),
         el(
@@ -232,11 +240,14 @@ export class HeroFigure {
               {},
               lead(
                 'Power spectrum',
-                this.lmax + 1,
+                this.counts.power,
                 'features',
-                'The power spectrum, invariant to rotation: how much detail the globe has at each scale.',
+                el('p', {
+                  class: 'hr-what',
+                  text: 'The power spectrum, invariant to rotation: how much detail the signal has at each scale.',
+                }),
               ),
-              this.cells.power.element,
+              this.cellHosts.power,
             ),
             redraw(
               mushHost,
@@ -252,11 +263,11 @@ export class HeroFigure {
               {},
               lead(
                 'Selective bispectrum',
-                this.invariant.n,
+                this.counts.descriptor,
                 'features',
-                `A selective bispectrum, also invariant: sums of products of three or four of the ${n} coefficients.`,
+                this.descriptorWhat,
               ),
-              this.cells.descriptor.element,
+              this.cellHosts.descriptor,
               this.status,
             ),
             redraw(
@@ -290,14 +301,144 @@ export class HeroFigure {
       },
       onDragEnd: release,
     });
-    this.earth.setSignal(this.x, this.vmax);
-    this.scramble();
+    this.load(earth);
     new IntersectionObserver((entries) => {
       this.visible = entries.some((e) => e.isIntersecting);
     }).observe(root);
 
     void this.rebuild();
     requestAnimationFrame(this.tick);
+  }
+
+  private invariantAt(lmax: number): Invariant {
+    let inv = this.invariants.get(lmax);
+    if (!inv) {
+      inv = new Invariant(this.tables, lmax);
+      this.invariants.set(lmax, inv);
+    }
+    return inv;
+  }
+
+  /** Shows `signal` at rest, with lists, color scales and texts for its band-limit. */
+  private load(signal: Signal, x: Float64Array = signal.x): void {
+    this.x = x;
+    this.lmax = Math.round(Math.sqrt(x.length)) - 1;
+    this.invariant = this.invariantAt(this.lmax);
+    this.vmax =
+      this.grid
+        .synthesize(toHalfSpectrum(x, this.lmax))
+        .reduce((m, v) => Math.max(m, Math.abs(v)), 0) || 1;
+
+    const n = dim(this.lmax);
+    // The same cells per row in every list, so that a list's area is its length.
+    const cols = 2 * (this.lmax + 1);
+    const list = (count: number, color?: (t: number) => string): CellGrid => {
+      const f = new CellGrid(count, {
+        cols,
+        cls: 'hr-cells',
+        label: `${count} numbers as colored cells`,
+        ...(color ? { color } : {}),
+      });
+      f.element.style.width = `${(100 * Math.min(count, cols)) / cols}%`;
+      return f;
+    };
+    this.cells = {
+      all: list(n, greyAt),
+      power: list(this.lmax + 1, inkAt),
+      descriptor: list(this.invariant.n),
+    };
+    this.cells.all.setReference(x);
+    this.cells.power.setReference(degreePower(x, this.lmax));
+    this.cells.descriptor.setReference(this.invariant.values(x));
+    for (const k of ['all', 'power', 'descriptor'] as const) {
+      this.cellHosts[k].replaceChildren(this.cells[k].element);
+    }
+    this.counts.all.textContent = String(n);
+    this.counts.power.textContent = String(this.lmax + 1);
+    this.counts.descriptor.textContent = String(this.invariant.n);
+    const earth = signal.kind === 'earth';
+    this.allWhat.textContent = `${earth ? 'The globe' : 'The digit'} in spherical harmonics. Turn it and they change.`;
+    this.descriptorWhat.textContent = `A selective bispectrum, also invariant: sums of products of three or four of the ${n} coefficients.`;
+    this.title.textContent = earth
+      ? 'Earth, roughly'
+      : this.pick === 'draw'
+        ? 'Your drawing'
+        : 'Digit';
+
+    this.earth.setSignal(x, this.vmax);
+    this.scramble();
+    this.dirty = true;
+  }
+
+  /** The draw pad, over the sphere while "draw" is picked; it starts from the last digit. */
+  private makePad(digits: DigitSet): HTMLElement {
+    const pad = new DrawPad({
+      size: digits.size,
+      onChange: (img, final) => {
+        this.loadImage(img);
+        if (final) {
+          this.lineWhenDone = true;
+          void this.rebuild();
+        } else this.stopSolve('Drawing…');
+      },
+    });
+    this.pad = pad;
+    return el(
+      'div',
+      { class: 'rw-padbox' },
+      pad.element,
+      button(
+        'clear',
+        () => {
+          pad.clear();
+          this.loadImage(pad.image);
+          this.stopSolve('The pad is empty.');
+        },
+        { kind: 'quiet' },
+      ),
+    );
+  }
+
+  private loadImage(image: Float32Array): void {
+    const digits = this.digits!;
+    this.analysis ??= new SphereGrid(ANALYSIS.nlat, ANALYSIS.nlon, DIGIT_L);
+    const signal = digitSignal(image, digits.size, this.analysis);
+    this.load(signal, bandlimit(signal.x, DIGIT_L));
+  }
+
+  private choose(p: Pick): void {
+    this.pick = p;
+    this.picker?.setActive(p);
+    this.root.classList.toggle('drawing', p === 'draw');
+    this.rot = identity3();
+    if (p === 'earth') {
+      this.load(this.earthSignal);
+    } else if (p === 'draw') {
+      this.pad!.load(this.digits!.images[this.lastDigit]!);
+      this.loadImage(this.pad!.image);
+      // Hold the sphere still under the pen.
+      this.spinning = false;
+      this.spinToggle.set(false);
+    } else {
+      this.lastDigit = p;
+      this.loadImage(this.digits!.images[p]!);
+    }
+    this.lineWhenDone = true;
+    void this.rebuild();
+  }
+
+  /** Drops the running solve and blanks the reconstruction, with `message` as the status. */
+  private stopSolve(message: string): void {
+    this.runs++;
+    if (this.solver.busy) this.solver.cancel();
+    this.rebuilt = null;
+    this.candidates = null;
+    this.candidateButton.hidden = true;
+    this.lined = false;
+    this.lineButton.disabled = true;
+    this.againButton.disabled = false;
+    this.redrawn.setSignal(null, this.vmax);
+    this.status.textContent = message;
   }
 
   apply(step: HeroStep): void {
@@ -359,6 +500,10 @@ export class HeroFigure {
 
   /** Hands the solver the descriptor, and nothing else, and shows what comes back. */
   private async rebuild(): Promise<void> {
+    if (this.pick === 'draw' && this.pad?.empty) {
+      this.stopSolve('The pad is empty.');
+      return;
+    }
     const run = ++this.runs;
     this.rebuilt = null;
     this.candidates = null;
@@ -369,7 +514,7 @@ export class HeroFigure {
     this.lineButton.textContent = 'line it up';
     this.lineButton.disabled = this.againButton.disabled = true;
     this.redrawn.setSignal(null, this.vmax);
-    this.status.textContent = `Reconstructing the globe from the ${this.invariant.n} features…`;
+    this.status.textContent = `Reconstructing from the ${this.invariant.n} features…`;
     await this.solver.solve(
       {
         lmax: this.lmax,
@@ -439,9 +584,9 @@ export class HeroFigure {
     const r = this.rebuilt;
     if (!r) return;
     const n = this.candidates?.reps.length ?? 1;
-    const others = n > 1 ? ` ${n} distinct globes match the features.` : '';
+    const others = n > 1 ? ` ${n} distinct signals match the features.` : '';
     this.status.textContent = this.lined
-      ? `Lined up, the rebuilt coefficients differ from the rough Earth's by ${sci(r.rel)} (relative error).${others}`
+      ? `Lined up, the rebuilt coefficients differ from the original's by ${sci(r.rel)} (relative error).${others}`
       : `Reconstructed in ${r.seconds.toFixed(1)} s from these features alone, in a pose of its own.${others}`;
   }
 
@@ -470,8 +615,10 @@ export class HeroFigure {
     this.lastTick = now;
     if (!this.visible) return;
     if (this.spinning && !this.dragging) {
-      // About the Earth's own axis, west to east, wherever a drag has left it.
-      const step = expMap(POLE.map((v) => v * SPIN_SPEED * dt));
+      // About the Earth's own axis, west to east, wherever a drag has left it; a digit turns
+      // about its own vertical.
+      const axis = this.pick === 'earth' ? POLE : [0, 1, 0];
+      const step = expMap(axis.map((v) => v * SPIN_SPEED * dt));
       // Through a quaternion, so that thousands of products stay a rotation.
       this.rot = quatToMat(matToQuat(mul3(this.rot, step)));
       this.dirty = true;
@@ -486,7 +633,7 @@ export class HeroFigure {
 }
 
 export const mount: Mount = async (root) => {
-  const [{ tables }, earth] = await Promise.all([sharedAssets(), loadEarth()]);
-  const figure = new HeroFigure(root, { tables, earth });
+  const [{ tables, digits }, earth] = await Promise.all([sharedAssets(), loadEarth()]);
+  const figure = new HeroFigure(root, { tables, earth, digits });
   return { apply: (step) => figure.apply(step as HeroStep) };
 };

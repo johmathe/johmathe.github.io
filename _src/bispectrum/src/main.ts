@@ -117,10 +117,12 @@ markToc();
 // Numbered caption steps put their figure in the state the sentence describes.
 document.addEventListener('click', (e) => {
   const btn = (e.target as Element | null)?.closest<HTMLButtonElement>('button[data-step]');
-  const root = btn?.closest('figure')?.querySelector<HTMLElement>('[data-figure]');
-  if (!btn || !root) return;
+  const roots = [
+    ...(btn?.closest('figure')?.querySelectorAll<HTMLElement>('[data-figure]') ?? []),
+  ];
+  if (!btn || !roots.length) return;
   for (const other of btn.closest('ol')?.querySelectorAll('button[data-step]') ?? []) {
     other.classList.toggle('active', other === btn);
   }
-  void ensure(root).then((fig) => fig?.apply?.(btn.dataset.step!));
+  for (const root of roots) void ensure(root).then((fig) => fig?.apply?.(btn.dataset.step!));
 });

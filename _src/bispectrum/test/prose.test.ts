@@ -55,7 +55,7 @@ it('keeps the widget strings free of named-once and unused terms', () => {
   expect(hits).toEqual([]);
 });
 
-describe.each(PAGES)('$file', ({ file, introEnd: introPart, defined }) => {
+describe.each(PAGES)('$file', ({ file, introEnd: introPart, defined, absent }) => {
   const doc = parse(readBlogFile(file));
   const placeholders = doc.elements.filter((e) => hasClass(e, 'placeholder'));
   /** The introduction: everything before the page's first section after it. */
@@ -146,13 +146,15 @@ describe.each(PAGES)('$file', ({ file, introEnd: introPart, defined }) => {
       '%s is defined in its section before any use',
       (_, term) => {
         const dfn = dfns.find((e) => termOf(e) === term.term);
-        // The headings of the chapter that defines a term may name it, and so may their entries
-        // in the contents.
+        // The headings and chapter-head standfirst of the chapter that defines a term may name it,
+        // and so may their entries in the contents and captions inside the term's own section.
         const home = chapterOf.get(term.part);
         const sameChapter = (part: string): boolean =>
           home !== undefined && chapterOf.get(part) === home;
         const heading = (r: TextRun): boolean =>
-          (sameChapter(r.part) && inside(r, (e) => e.tag === 'h2' || e.tag === 'h3')) ||
+          (sameChapter(r.part) &&
+            inside(r, (e) => e.tag === 'h2' || e.tag === 'h3' || hasClass(e, 'chapter-head'))) ||
+          (r.part === term.part && inside(r, (e) => e.tag === 'figcaption')) ||
           (inside(r, (e) => e.tag === 'nav') &&
             inside(r, (e) => e.tag === 'a' && sameChapter((e.attrs['href'] ?? '').slice(1))));
         const previewed = (i: number): boolean => PREVIEWED.has(term.term) && i < introEnd;
@@ -184,8 +186,11 @@ describe.each(PAGES)('$file', ({ file, introEnd: introPart, defined }) => {
       },
     );
 
-    it.each(UNUSED.map((t) => [t.term, t] as const))('%s is not on the page', (_, term) => {
-      expect(uses(term, (r) => prose(r) && !inside(r, isReference))).toEqual([]);
-    });
+    it.each([...UNUSED, ...absent].map((t) => [t.term, t] as const))(
+      '%s is not on the page',
+      (_, term) => {
+        expect(uses(term, (r) => prose(r) && !inside(r, isReference))).toEqual([]);
+      },
+    );
   });
 });

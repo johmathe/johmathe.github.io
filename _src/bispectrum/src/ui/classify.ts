@@ -31,6 +31,7 @@ import { DrawPad } from './drawpad';
 import { CellGrid } from './cells';
 import { FlatView, GridInset } from './flat';
 import { SphereView } from './sphere';
+import { plain, say } from './vocab';
 
 export interface ClassifyAssets {
   tables: InvariantTables;
@@ -199,10 +200,16 @@ export class ClassifyFigure {
       cols: this.lmax + 1,
       color: inkAt,
       cls: 'cf-input cf-strip',
-      label: `The ${this.lmax + 1} numbers of the power spectrum as shaded cells`,
+      label: say(
+        `The ${this.lmax + 1} numbers of the power spectrum as shaded cells`,
+        'The power spectrum as shaded cells',
+      ),
     });
     this.descriptor = new CellGrid(this.invariant.n, {
-      label: `The ${this.invariant.n} numbers of the descriptor as colored cells`,
+      label: say(
+        `The ${this.invariant.n} numbers of the descriptor as colored cells`,
+        'The invariants as colored cells',
+      ),
     });
     this.cnn = new CnnClient(manifest, assets.cnnBin, (logits) => {
       // An answer for a drawing that has since been cleared is dropped.
@@ -292,15 +299,18 @@ export class ClassifyFigure {
           el('div', { class: 'cf-reads' }, input, el('div', { class: 'cf-note', text: caption })),
           bars.element,
         ),
-        el('div', { class: 'cf-note', text: note(a) }),
+        !plain() && el('div', { class: 'cf-note', text: note(a) }),
       );
 
     const models: Record<ModelKey, HTMLElement> = {
       mlp: model(
         'Bispectrum + MLP',
-        `L = ${this.lmax}`,
+        say(`L = ${this.lmax}`, 'invariant'),
         this.descriptor.element,
-        `what it reads: the ${this.invariant.n}-number descriptor`,
+        say(
+          `what it reads: the ${this.invariant.n}-number descriptor`,
+          'what it reads: its invariants',
+        ),
         this.mlpBars,
         manifest.accuracy.mlp,
       ),
@@ -314,9 +324,12 @@ export class ClassifyFigure {
       ),
       power: model(
         'Power spectrum + MLP',
-        `L = ${this.lmax}`,
+        say(`L = ${this.lmax}`, 'invariant'),
         this.powerCells.element,
-        `what it reads: ${this.lmax + 1} numbers, one per degree`,
+        say(
+          `what it reads: ${this.lmax + 1} numbers, one per degree`,
+          'what it reads: one number per degree',
+        ),
         this.powerBars,
         manifest.accuracy.power,
       ),

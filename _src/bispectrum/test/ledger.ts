@@ -78,14 +78,17 @@ export const DEFINED: DefinedTerm[] = [
   { term: 'selective', part: 'ring-finite', pattern: words('selective|selectivity') },
 ];
 
-/** The sections of `post.html`, which follows the talk, that own the terms of `DEFINED`. */
-const POST_PARTS: Record<string, string> = {
-  'invariant descriptor': 'want',
+/**
+ * The sections of `post.html`, which follows the talk, that own the terms of `DEFINED`, or `null`
+ * for a term the post doesn't use.
+ */
+const POST_PARTS: Record<string, string | null> = {
+  'invariant descriptor': null,
   pose: 'want',
   orbit: 'want',
   complete: 'want',
   'power spectrum': 'invariance',
-  bispectrum: 'ring',
+  bispectrum: 'shift',
   'irreducible representation': 'group-fourier',
   generic: 'g-bispectrum',
   'Clebsch-Gordan coefficient': 'g-bispectrum',
@@ -93,7 +96,7 @@ const POST_PARTS: Record<string, string> = {
   'spherical harmonic': 'sphere',
   degree: 'sphere',
   'band-limit': 'sphere',
-  selective: 'ring',
+  selective: 'chain',
 };
 
 export interface Page {
@@ -101,18 +104,26 @@ export interface Page {
   /** `id` of the first section after the introduction. */
   introEnd: string;
   defined: DefinedTerm[];
+  /** Terms of `DEFINED` the page doesn't use at all. */
+  absent: Term[];
 }
 
+const postPart = (t: DefinedTerm): string | null => {
+  const part = POST_PARTS[t.term];
+  if (part === undefined) throw new Error(`post.html: no section owns "${t.term}"`);
+  return part;
+};
+
 export const PAGES: Page[] = [
-  { file: 'index.html', introEnd: 'ring', defined: DEFINED },
+  { file: 'index.html', introEnd: 'ring', defined: DEFINED, absent: [] },
   {
     file: 'post.html',
     introEnd: 'preserves',
-    defined: DEFINED.map((t) => {
-      const part = POST_PARTS[t.term];
-      if (!part) throw new Error(`post.html: no section owns "${t.term}"`);
-      return { ...t, part };
+    defined: DEFINED.flatMap((t) => {
+      const part = postPart(t);
+      return part === null ? [] : [{ ...t, part }];
     }),
+    absent: DEFINED.filter((t) => postPart(t) === null),
   },
 ];
 

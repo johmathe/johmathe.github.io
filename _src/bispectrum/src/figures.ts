@@ -4,6 +4,7 @@ import type { Mount } from './figure';
 export const FIGURES: Record<string, () => Promise<Mount>> = {
   hero: () => import('./ui/hero').then((m) => m.mount),
   ring: () => import('./ui/ring').then((m) => m.mount),
+  wave: () => import('./ui/wave').then((m) => m.mount),
   bridge: () => import('./ui/bridge').then((m) => m.mount),
   wall: () => import('./ui/wall').then((m) => m.mount),
   recon: () => import('./ui/widget').then((m) => m.mount),
