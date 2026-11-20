@@ -90,6 +90,11 @@ export class HeroFigure {
   private readonly grid: SphereGrid;
   private readonly solver: SolverClient;
   private readonly rng = new Rng(20261109);
+  /**
+   * Seeds the random rotation of each degree in the power spectrum's attempt. Only "another"
+   * draws a new one, so that a drawing in progress moves the attempt instead of rerolling it.
+   */
+  private scrambleSeed = 20261110;
 
   private readonly earth: SphereView;
   private readonly mush: SphereView;
@@ -350,6 +355,8 @@ export class HeroFigure {
     this.cells.all.setReference(x);
     this.cells.power.setReference(degreePower(x, this.lmax));
     this.cells.descriptor.setReference(this.invariant.values(x));
+    // Painted before they replace the old canvases, which a pen stroke does many times a second.
+    this.refresh();
     for (const k of ['all', 'power', 'descriptor'] as const) {
       this.cellHosts[k].replaceChildren(this.cells[k].element);
     }
@@ -366,7 +373,7 @@ export class HeroFigure {
         : 'Digit';
 
     this.earth.setSignal(x, this.vmax);
-    this.scramble();
+    this.showScramble();
     this.dirty = true;
   }
 
@@ -485,7 +492,12 @@ export class HeroFigure {
 
   /** Another globe with the same amount of detail at every scale. */
   private scramble(): void {
-    this.mush.setSignal(scrambleDegrees(this.x, this.rng), this.vmax);
+    this.scrambleSeed = Math.floor(this.rng.uniform() * 2 ** 32);
+    this.showScramble();
+  }
+
+  private showScramble(): void {
+    this.mush.setSignal(scrambleDegrees(this.x, new Rng(this.scrambleSeed)), this.vmax);
   }
 
   private setLined(on: boolean): void {

@@ -34,8 +34,7 @@ export class SolverClient {
   cancel(): void {
     this.activeId = 0;
     this.worker?.terminate();
-    this.worker = null;
-    this.ready = null;
+    void this.spawn();
   }
 
   /** Starts a solve, cancelling any running one; `onEvent` only sees events of this solve. */
