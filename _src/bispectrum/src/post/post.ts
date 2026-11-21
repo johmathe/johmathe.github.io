@@ -2,12 +2,14 @@ import '../main';
 import { art, isArtName } from '../deck/art';
 import { icon, isIconName } from '../deck/icons';
 import { reducedMotion } from '../ui/canvas';
+import { animateTiles } from './tiles';
 
 for (const slot of document.querySelectorAll<HTMLElement>('[data-icon]')) {
   const name = slot.dataset.icon ?? '';
   if (!isIconName(name)) throw new Error(`no icon named ${name}`);
   slot.innerHTML = icon(name);
 }
+for (const list of document.querySelectorAll('.gts')) animateTiles(list);
 for (const slot of document.querySelectorAll<HTMLElement>('[data-art]')) {
   const name = slot.dataset.art ?? '';
   if (!isArtName(name)) throw new Error(`no art named ${name}`);

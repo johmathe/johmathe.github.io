@@ -1,5 +1,6 @@
 import type { Figure } from './figure';
 import { FIGURES } from './figures';
+import { highlightCode } from './highlight';
 // The brand files live outside this package, so they go through the bundler instead of tags in
 // index.html (which the dev server cannot resolve).
 import faviconUrl from '../../assets/brand/bispectrum-favicon.svg';
@@ -25,6 +26,8 @@ for (const img of document.querySelectorAll<HTMLImageElement>('img[data-brand]')
   const url = BRAND[img.dataset.brand ?? ''];
   if (url) img.src = url;
 }
+
+highlightCode(document);
 
 void import('./mathtext').then(({ renderMath }) =>
   renderMath(document.body, (el) => el.closest('[data-figure]') !== null),

@@ -385,16 +385,29 @@ pre code {
   font-size: inherit;
 }
 
-pre .c {
-  color: var(--ash);
-}
-
+/* Syntax colours (classes from highlight.ts) in the brand's one hue: orange-text for keywords and
+   literals, the gray ramp for the rest. Plain orange is too light for text. */
 pre .k {
+  color: var(--orange-text);
   font-weight: 600;
 }
 
-pre .s {
-  color: var(--graphite);
+pre .s,
+pre .n {
+  color: var(--orange-text);
+}
+
+pre .f {
+  font-weight: 600;
+}
+
+pre .a,
+pre .p {
+  color: var(--muted);
+}
+
+pre .c {
+  color: var(--ash);
 }
 
 /* Fold-outs: the formal version, skippable. */

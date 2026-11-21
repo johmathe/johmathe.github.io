@@ -41,6 +41,9 @@ const polygon = (n: number, r: number, a0: number): string =>
 
 const UP = -Math.PI / 2;
 
+/** The torus icon's 4 × 4 grid, one digit per cell: 0 sand, 1 stone, 2 orange. */
+export const TORUS_SHADE: readonly string[] = ['0100', '1210', '0100', '0001'];
+
 const DRAW: Record<IconName, () => string> = {
   ring: () => {
     const dots = Array.from({ length: 8 }, (_, i) => {
@@ -58,15 +61,12 @@ const DRAW: Record<IconName, () => string> = {
     return `<path d="${d} Z"/>${turn(42, 42, UP + 0.1, UP + 1.1)}`;
   },
   torus: () => {
-    const shade = ['0100', '1210', '0100', '0001'];
-    const cells = shade
-      .flatMap((row, i) =>
-        [...row].map(
-          (v, j) =>
-            `<rect class="cell c${v}" x="${18 + 15 * j}" y="${18 + 15 * i}" width="13" height="13" rx="1.5"/>`,
-        ),
-      )
-      .join('');
+    const cells = TORUS_SHADE.flatMap((row, i) =>
+      [...row].map(
+        (v, j) =>
+          `<rect class="cell c${v}" x="${18 + 15 * j}" y="${18 + 15 * i}" width="13" height="13" rx="1.5"/>`,
+      ),
+    ).join('');
     return `${cells}${shift(22, 90, 74, 90)}${shift(90, 22, 90, 74)}`;
   },
   polygon: () =>

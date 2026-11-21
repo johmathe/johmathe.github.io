@@ -192,7 +192,8 @@ details.foldout + details.foldout {
 
 /* ------------------------------------------------------------------ group tiles */
 
-/* Four to a row, and the last row centred, so seven tiles read as 4 + 3. */
+/* Four to a row, and the last row centred, so seven tiles read as 4 + 3. On a phone, two to a
+   row at the size of the body text. */
 .gts {
   --per-row: 4;
   --gap: 12px;
@@ -205,23 +206,26 @@ details.foldout + details.foldout {
   list-style: none;
 }
 
+/* A column, so the group and module names line up across a row whatever the names above wrap to. */
 .gt {
   flex: 0 0 calc((100% - (var(--per-row) - 1) * var(--gap)) / var(--per-row));
+  display: flex;
+  flex-direction: column;
   box-sizing: border-box;
-  padding: 14px 8px 12px;
+  padding: 16px 8px 14px;
   border: 1px solid var(--rule);
   border-radius: 10px;
   background: var(--panel);
-  font-size: 14px;
+  font-size: 16px;
   line-height: 1.3;
   text-align: center;
 }
 
 .gt .ic {
   display: block;
-  width: 64px;
-  height: 64px;
-  margin: 0 auto 8px;
+  width: 72px;
+  height: 72px;
+  margin: 0 auto 10px;
 }
 
 .gt p {
@@ -231,15 +235,16 @@ details.foldout + details.foldout {
 
 .gt p .sub {
   display: block;
-  margin-top: 2px;
-  font-size: 13px;
+  margin-top: 3px;
+  font-size: 14px;
   font-weight: 400;
   color: var(--muted);
 }
 
 .gt b {
   display: block;
-  margin-top: 6px;
+  margin-top: auto;
+  padding-top: 8px;
   font-weight: 400;
   color: var(--orange-text);
 }
@@ -247,33 +252,32 @@ details.foldout + details.foldout {
 .gt code {
   display: block;
   margin-top: 4px;
-  font-size: 11.5px;
+  font-size: 13px;
   color: var(--muted);
 }
 
 @media (max-width: 520px) {
   .gts {
-    --per-row: 3;
-    --gap: 8px;
+    --per-row: 2;
+    --gap: 10px;
   }
 
   .gt {
-    padding: 10px 4px;
-    font-size: 13px;
+    padding: 16px 6px 14px;
+    font-size: 17px;
   }
 
   .gt .ic {
-    width: 46px;
-    height: 46px;
-    margin-bottom: 6px;
+    width: 68px;
+    height: 68px;
   }
 
   .gt p .sub {
-    font-size: 12px;
+    font-size: 15px;
   }
 
   .gt code {
-    font-size: 10px;
+    font-size: 14px;
   }
 }
 

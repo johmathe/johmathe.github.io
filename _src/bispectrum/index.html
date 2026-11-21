@@ -1015,7 +1015,9 @@ after = F.relu(proj(z))  <span class="c"># (B, C, H, W)</span></code></pre>
           scatter-add, with no loop over degrees. From <code>so3_on_s2.py</code>, with names
           shortened:
         </p>
-        <pre><code>prods = flat[:, i1] * flat[:, i2] * cg * torch.conj(flat[:, i3])
+        <pre
+          data-lang="python"
+        ><code>prods = flat[:, i1] * flat[:, i2] * cg * torch.conj(flat[:, i3])
 _scatter_add_complex(result, entry, prods)</code></pre>
         <p>
           At \(L = 64\) the list has
